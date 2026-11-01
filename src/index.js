@@ -1,6 +1,8 @@
+import {proactiveReview} from './proactive.js';
 import {handleAPI} from './api.js';
 export {MissionWorkflow} from './workflow.js';
 export default {
+ async scheduled(controller,env,ctx){ctx.waitUntil(proactiveReview(env));},
  async fetch(request,env){
   const path=new URL(request.url).pathname;
   if(path==='/api/health'&&request.method==='GET')return Response.json({status:env.AI?.run&&env.DB&&env.MASTER_TOKEN?.length>=24?'ready':'configuration_required',bindings:{cloudflareAI:!!env.AI?.run,d1:!!env.DB},accessConfigured:!!(env.MASTER_TOKEN&&env.MASTER_TOKEN.length>=24)}, {headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
