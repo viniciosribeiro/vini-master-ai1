@@ -1,3 +1,4 @@
+import {loadNvidia} from './provider-secrets.js';
 export const AGENTS = [
  {id:'supervisor',name:'Supervisor',role:'coordenação'},
  {id:'programador',name:'Programador',role:'programação'},
@@ -30,12 +31,13 @@ export async function callAI(env,messages,choice='auto'){
     model=env.CF_AI_MODEL||'@cf/zai-org/glm-4.7-flash';
     text=asText(await env.AI.run(model,{messages,max_completion_tokens:1400,chat_template_kwargs:{enable_thinking:false}}));
    }else{
-    if(!env.NVIDIA_API_KEY)throw Error('Chave NVIDIA não cadastrada');
+    const nvidiaSecret=await loadNvidia(env);
+    if(!nvidiaSecret)throw Error('Conecte sua chave NVIDIA nas Configurações');
     model=env.NVIDIA_MODEL||'nvidia/nemotron-3-ultra-550b-a55b';
     const ctl=new AbortController();
     const t=setTimeout(()=>ctl.abort(),70000);
     try {
-     const res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{method:'POST',signal:ctl.signal,headers:{Authorization:'Bearer '+env.NVIDIA_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model,messages,temperature:0.6,max_tokens:1400,stream:false})});
+     const res=await fetch('https://integrate.api.nvidia.com/v1/chat/completions',{method:'POST',signal:ctl.signal,headers:{Authorization:'Bearer '+nvidiaSecret,'Content-Type':'application/json'},body:JSON.stringify({model,messages,temperature:0.6,max_tokens:1400,stream:false})});
      if(!res.ok)throw Error('NVIDIA HTTP '+res.status);
      text=asText(await res.json());
     }finally{clearTimeout(t);}
@@ -48,4 +50,13 @@ export async function callAI(env,messages,choice='auto'){
 }
 export function agentPrompt(a){
  return 'Você é '+a.name+', especialista em '+a.role+' no VINI MASTER AI. Responda em português. Entregue uma análise concreta, recomendações, riscos e próximos passos. Você não tem ferramentas de alteração de repositórios nem deploy. Nunca diga que realizou ações externas ou testes que não executou.';
+}
+
+export async function verifyProvider(env,provider,key){
+ const selection=normalizeProvider(provider);
+ if(selection==='auto')throw Error('Selecione um provedor para testar.');
+ const probe={...env};
+ if(selection==='nvidia'&&key)probe.NVIDIA_API_KEY=key;
+ const response=await callAI(probe,[{role:'user',content:'Responda somente OK.'}],selection);
+ return {ok:true,provider:response.provider,model:response.model,reply:response.text.slice(0,120)};
 }
