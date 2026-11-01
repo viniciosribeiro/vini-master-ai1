@@ -117,6 +117,15 @@ async function startCodeJob(request){
  }catch(e){projectNotice('A tarefa não começou: '+e.message);}
 }
 pj('projects-refresh').addEventListener('click',loadProjects);
+pj('projects-import').addEventListener('click',async e=>{
+ const button=e.currentTarget;button.disabled=true;
+ try{
+  const result=await api('/github/import',{method:'POST',body:{}});
+  await loadProjects();
+  projectNotice(result.imported+' projeto(s) importado(s) do GitHub. Os repositórios remotos não foram alterados.');
+ }catch(err){projectNotice(err.message);}finally{button.disabled=false;}
+});
+
 pj('project-add-form').addEventListener('submit',async e=>{
  e.preventDefault();
  try{
@@ -166,7 +175,9 @@ pj('github-connect-form').addEventListener('submit',async e=>{
  e.preventDefault();const input=pj('github-access-key'),btn=e.target.querySelector('button[type="submit"]');btn.disabled=true;
  try{
   const result=await api('/github/connect',{method:'POST',body:{token:input.value.trim(),repo:pj('github-check-repo').value.trim()}});
-  input.value='';githubReady=true;await loadProjects();projectNotice('GitHub conectado com permissão de escrita no repositório '+result.repository+'.');
+  input.value='';githubReady=true;let imported=0;
+  try{const batch=await api('/github/import',{method:'POST',body:{}});imported=batch.imported||0;}catch{}
+  await loadProjects();projectNotice('GitHub conectado! '+imported+' projeto(s) importado(s) automaticamente.');
  }catch(err){projectNotice(err.message);}finally{btn.disabled=false;}
 });
 pj('github-disconnect').addEventListener('click',async()=>{
