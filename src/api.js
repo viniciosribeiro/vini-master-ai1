@@ -310,10 +310,13 @@ export async function handleAPI(req,env){
     return respond({...interview,provider:null,model:null,execution:{kind:interview.intake?.status==='started'?'project_catalog':'conversation',status:interview.intake?.status==='started'?'saved':'answered',id:interview.project?.id||null,externalWorkConfirmed:false,proofUrl:null}});
    }
    if(isUnsupportedDeploymentRequest(message)){
-    const reply='Não iniciei nenhum build ou deploy. O VINI não possui uma integração de execução com a Vercel ou uma ação de publicação configurada no aplicativo. O que está habilitado é análise de missões e, para um projeto com repositório e GitHub autorizado, geração de código e abertura de PR rascunho. Para disparar builds, será necessário implementar e autorizar um conector operacional de publicação. Não vou transformar seu pedido de deploy em uma análise que finja ter executado a operação.';
+    let connection=false;try{connection=!!await readVercelToken(env);}catch{}
+    const reply=connection?
+     'Ainda não iniciei esse build. A Vercel está conectada, mas preciso que você selecione o projeto e o deployment exatos. Toque em **Escolher projeto Vercel** para iniciar uma prévia real e acompanhar seu ID.':
+     'Ainda não iniciei esse build. Falta conectar sua conta Vercel ao VINI. Toque em **Conectar Vercel** uma vez; depois você poderá escolher o projeto e disparar uma prévia real.';
     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(reply).run();
-    await log(env,'supervisor','Ação externa bloqueada: pedido de build/deploy sem integração de execução configurada');
-    return respond({reply,provider:null,model:null,execution:{kind:'blocked',status:'not_executed',id:null,externalWorkConfirmed:false,proofUrl:null,reason:'executor_deploy_unavailable'}});
+    await log(env,'supervisor','Build solicitado, mas não disparado: '+(connection?'aguardando seleção do projeto':'Vercel não conectada'));
+    return respond({reply,provider:null,model:null,actionRequired:connection?'vercel_choose':'vercel_setup',execution:{kind:'blocked',status:'not_executed',id:null,externalWorkConfirmed:false,proofUrl:null,reason:connection?'select_project':'connect_vercel'}});
    }
    const match=message.match(/^(?:por favor[,:]?\s*)?(?:lembre(?:-se)?|guarde|memorize|não esqueça)(?:\s+de)?(?:\s+que)?[,\s:]+(.+)/iu);
    const saved=match?.[1]?.trim();
@@ -360,7 +363,7 @@ export async function handleAPI(req,env){
     const safeReply=guardChatDeployment(protectedAnswer.text,verifiedSites);
     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,?)").bind(safeReply,answer.provider).run();
     await log(env,'supervisor','Respondeu à conversa via '+answer.provider);
-    return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved,execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null},claimBlocked:protectedAnswer.intercepted});
+    return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved,execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null},claimBlocked:protectedAnswer.intercepted,actionRequired:protectedAnswer.intercepted?'vercel_setup':null});
    }catch(e){return fail(String(e.message||e),503);}
   }
   if(path==='/api/missions'&&method==='POST'){
