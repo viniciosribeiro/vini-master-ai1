@@ -4,7 +4,7 @@ import {ensureSchema} from './bootstrap.js';
 const respond=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const fail=(message,status=400)=>respond({error:message},status);
 const safeId=x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x||'');
-function authorized(req,env){
+export function authorized(req,env){
  if(!env.MASTER_TOKEN||env.MASTER_TOKEN.length<24)return false;
  const got=req.headers.get('Authorization')||'';
  const good='Bearer '+env.MASTER_TOKEN;
@@ -29,7 +29,9 @@ async function recall(env,content){
  }catch{return [];}
 }
 export async function handleAPI(req,env){
- if(!authorized(req,env))return fail(env.MASTER_TOKEN?.length>=24?'Acesso negado.':'Acesso ainda não configurado: adicione MASTER_TOKEN de pelo menos 24 caracteres nos Secrets do Worker Cloudflare.',401);
+ if(!authorized(req,env))return fail(env.MASTER_TOKEN?.length>=24?'A chave de acesso não corresponde ao MASTER_TOKEN configurado na Cloudflare. A chave NVIDIA é diferente da senha deste painel.':'Acesso ainda não configurado: adicione MASTER_TOKEN de pelo menos 24 caracteres nos Secrets do Worker Cloudflare.',401);
+ const sessionPath=new URL(req.url).pathname;
+ if(sessionPath==='/api/auth/session'&&req.method==='GET')return respond({authenticated:true,cloudflareAI:!!env.AI?.run,storage:!!env.DB});
  if(!env.DB)return fail('Binding do banco DB ausente.',503);
  const url=new URL(req.url),path=url.pathname,method=req.method;
  try{
