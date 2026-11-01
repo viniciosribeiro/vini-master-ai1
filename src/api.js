@@ -335,6 +335,12 @@ export async function handleAPI(req,env){
    const thread=await chooseThread(env.DB,String(data.threadId||''));
    if(!thread.project_id&&!thread.is_draft&&thread.id==='legacy-history')return fail('Vincule o histórico anterior a um projeto antes de continuar.',409);
    const threadId=thread.id;
+   if(thread.project_id&&/\b(?:novo projeto|criar (?:um |uma )?projeto|novo sistema do zero)\b/iu.test(message)){
+    const reply='Para manter os históricos separados, vou abrir uma conversa exclusiva para o novo projeto. Toque em **Criar conversa de novo projeto** para começar a entrevista.';
+    await saveThreadMessage(env.DB,threadId,'user',message);
+    await saveThreadMessage(env.DB,threadId,'assistant',reply,'system');
+    return respond({reply,provider:null,model:null,actionRequired:'new_project_chat',execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null}});
+   }
    if(thread.is_draft&&!thread.project_id&&!wantsNewProject(message)){
     await setupIntakes(env.DB);
     const active=await env.DB.prepare("SELECT id FROM project_intakes WHERE status='collecting' AND thread_id=? LIMIT 1").bind(threadId).first();
