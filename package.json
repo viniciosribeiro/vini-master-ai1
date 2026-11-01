@@ -6,10 +6,13 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "test": "node --test tests/*.test.mjs",
-    "test:voice": "node --test tests/native-voice-contract.test.mjs"
+    "test:voice": "node --test tests/native-voice-contract.test.mjs",
+    "build:voice": "esbuild src/vini-native-voice-client.js --bundle --format=iife --platform=browser --target=es2022 --outfile=public/vini-native-voice-client.js",
+    "build:preview": "npm run build:voice"
   },
   "devDependencies": {
-    "wrangler": "^4.142.0"
+    "wrangler": "^4.142.0",
+    "esbuild": "0.28.2"
   },
   "cloudflare": {
     "bindings": {
