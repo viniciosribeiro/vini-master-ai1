@@ -1,4 +1,4 @@
-import {routeWorkIntent,delegateChatWork} from './orchestrator.js';
+import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
 import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
 import {guardChatDeployment,deploymentContext} from './deploy-verification.js';
 import {setupIntakes,handleIntake} from './intake.js';
@@ -241,9 +241,15 @@ export async function handleAPI(req,env){
     await log(env,'supervisor','Memória permanente solicitada e registrada');
    }
    // Launch real agents for actionable project instructions, not for ordinary conversation.
-   if(!saved&&routeWorkIntent(message)){
+   let taskInput=!saved&&routeWorkIntent(message)?message:null;
+   if(!saved&&!taskInput&&/^(?:fa[cç]a tudo|pode fazer|faz isso|pode executar|execute agora|pode iniciar|inicie agora|pode come[cç]ar|continue com isso)\s*[.!]?$/iu.test(message)){
+    const recent=await env.DB.prepare("SELECT role,content FROM messages WHERE id < (SELECT MAX(id) FROM messages) ORDER BY id DESC LIMIT 5").all();
+    const items=recent.results||[],priorUser=items.find(x=>x.role==='user')?.content,priorAssistant=items.find(x=>x.role==='assistant')?.content;
+    taskInput=resolvedFollowUp(message,priorUser,priorAssistant);
+   }
+   if(taskInput){
     const available=await listProjects(env.DB);
-    const delegation=await delegateChatWork(env,message,provider,available);
+    const delegation=await delegateChatWork(env,taskInput,provider,available);
     if(delegation){
      await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(delegation.reply).run();
      return respond({...delegation,provider:null,model:null});
