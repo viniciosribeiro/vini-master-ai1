@@ -1,4 +1,4 @@
-# VINI MASTER AI — Orquestração Real 0.7.0
+# VINI MASTER AI — Orquestração 0.7.1
 
 # VINI MASTER AI — JARVIS Robot Edition 0.6.1
 
@@ -119,3 +119,6 @@ O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service wo
 - Mantida política de uso consciente: MAX_DAILY_MISSIONS (padrão 3), limite de jobs de programação (3/dia), necessidade de conexões e permissões GitHub, sem alegar publicação ou testes não realizados.
 
 **Validação:** classificação e delegação verificadas com testes simulados. A confirmação final de uma missão com credenciais do usuário depende de executar um pedido autenticado no aplicativo, não pode ser inferida apenas da presença do Workflow configurado.
+
+### Complemento 0.7.1: equipe de programação de verdade
+O pipeline de PR registra Supervisor, Programador, QA (revisão estática) e Designer (revisão textual quando houver interface) em `code_agent_runs` (D1). O Escritório observa `codeRuns` e apresenta progresso real por agente. Animação de trabalhando exige `status=working` registrado. Nenhuma chamada de modelo é alegada como teste de navegador ou deploy. Teste simulado do pipeline gerou PR mock e registrou as quatro especialidades; isso não equivale à execução autenticada do GitHub.
