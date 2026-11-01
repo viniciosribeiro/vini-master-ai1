@@ -1,3 +1,16 @@
+# VINI MASTER AI — Monitor de Ações 0.8.0
+
+## Versão 0.8.0 — Diário de execução em tempo quase real
+
+- Endpoint autenticado `GET /api/live?after=N&limit=110` consulta eventos D1 reais em ordem crescente por ID, devolve cursor e evita cache. Limite de 5 a 120 eventos por chamada, sem websockets ou polling permanente de GPU.
+- A interface mobile acompanha eventos por atualização incremental de cerca de 1,7 segundo enquanto uma missão está na fila/em execução, e reduz consultas quando ociosa ou com aba oculta. Os estados dos agentes vêm de `agent_runs` / `code_agent_runs` — o histórico não gera estados falsos.
+- Diário acessível no Escritório e no Chat, com filtro por Supervisor/VINI, Programador, Designer, QA, Infra e Pesquisa, horário, etapa, status e vínculo à missão; diálogo móvel independente da rolagem do chat.
+- Cada robô abre seus registros reais pelo botão "Ver ações reais e histórico deste agente". As últimas ações permanecem mesmo após a missão terminar; não existe inventar progresso para entretê-lo.
+- Pipeline de código vincula registros de atividade ao ID real do trabalho; Workflow registra recuperação de contexto, planejamento, delegação, chamadas de IA, pareceres e consolidação, mas não expõe pensamento privado de modelos.
+- Quando limites diários ou Workflows bloquearem a execução, VINI registra um evento de bloqueio. Publicação/deploy continua sujeita a verificação real e nunca é assumida a partir de uma frase do modelo.
+- Eventos antigos continuam persistidos no D1; o monitor carrega inicialmente os 110 mais recentes e mantém até 280 no cliente. Dados sensíveis nunca são colocados em interfaces públicas sem autenticação.
+- A implementação e os testes de cursor/fluxo podem ser verificados no repositório; testes end-to-end com uma missão autenticada precisam ser feitos com a chave privada do proprietário, não acessível aqui.
+
 # VINI MASTER AI — Orquestração 0.7.1
 
 # VINI MASTER AI — JARVIS Robot Edition 0.6.1
