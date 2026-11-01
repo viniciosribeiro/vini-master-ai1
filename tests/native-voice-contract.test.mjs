@@ -57,3 +57,13 @@ test('pinned Cloudflare runtime toolchain matches isolated cloud dry-run',()=>{
  assert.equal(pkg.devDependencies.wrangler,'4.156.0');
  assert.equal(pkg.devDependencies.esbuild,'0.28.2');
 });
+
+test('ElevenLabs TTS is explicitly opt-in and fails closed without configured voice/credentials',()=>{
+ assert.equal(pkg.dependencies['@cloudflare/voice-elevenlabs'],'0.2.0');
+ assert.match(server,/env\.VINI_VOICE_PROVIDER==='elevenlabs'/);
+ assert.match(server,/VINI_ELEVENLABS_VOICE_ID/);
+ assert.match(server,/ELEVENLABS_API_KEY/);
+ assert.match(server,/Nenhum serviço de voz externo será acionado/);
+ assert.match(server,/modelId:'eleven_flash_v2_5'/);
+ assert.match(server,/return new WorkersAITTS\(env\.AI\)/);
+});
