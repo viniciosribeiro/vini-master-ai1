@@ -15,6 +15,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
   if(!mission)return {error:'Missão inexistente'};
   try{
    const ctx=await step.do('Recuperar histórico',async()=>{
+    await record(this.env.DB,id,'supervisor','Consultando memória e histórico para definir escopo da missão');
     const [pins,past]=await Promise.all([this.env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),this.env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 16').all()]);
     return {pins:(pins.results||[]).map(x=>x.content.slice(0,350)).join('\n').slice(0,5500),past:(past.results||[]).reverse().map(x=>x.role+': '+x.content.slice(0,400)).join('\n').slice(0,5500)};
    });
@@ -24,7 +25,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     await record(this.env.DB,id,'supervisor','Planejando missão');
     const answer=await callAI(this.env,[{role:'system',content:'Você é o supervisor VINI MASTER AI. Planeje um trabalho coordenado para Programador, Designer, QA, Infra e Pesquisa. Não invente entregas ou testes.'},{role:'user',content:'MISSÃO:\n'+mission.description+'\nMEMÓRIAS:\n'+ctx.pins+'\nHISTÓRICO:\n'+ctx.past}],mission.provider);
     await agentState(this.env.DB,id,'supervisor','done',answer.text,answer.provider);
-    await record(this.env.DB,id,'supervisor','Plano concluído e distribuído');
+    await record(this.env.DB,id,'supervisor','Plano de execução gerado via '+answer.provider+' ('+answer.text.length+' caracteres)');
     return answer.text;
    });
    const members=await step.do('Consultar especialistas atribuídos',async()=>{
@@ -33,14 +34,15 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     return AGENTS.filter(a=>a.id!=='supervisor'&&assigned.has(a.id));
    });
    // Independent durable steps: specialists work concurrently, and each step is replay-safe.
+   await record(this.env.DB,id,'supervisor','Delegando trabalho para '+members.map(x=>x.name).join(', ').slice(0,180));
    const contributions=await Promise.all(members.map(agent=>
     step.do(agent.name+' analisa a missão',{retries:{limit:1,delay:'5 seconds'}},async()=>{
      await agentState(this.env.DB,id,agent.id,'working');
-     await record(this.env.DB,id,agent.id,'Executando análise especializada: '+mission.title);
+     await record(this.env.DB,id,agent.id,'Iniciou análise especializada: '+mission.title.slice(0,130));
      try{
       const answer=await callAI(this.env,[{role:'system',content:agentPrompt(agent)},{role:'user',content:'Missão: '+mission.description+'\nPlano do supervisor:\n'+plan.slice(0,4000)+'\nProduza apenas a sua contribuição real, verificável e útil. Informe limites de execução claramente.'}],mission.provider);
       await agentState(this.env.DB,id,agent.id,'done',answer.text,answer.provider);
-      await record(this.env.DB,id,agent.id,'Contribuição concluída: '+mission.title.slice(0,120));
+      await record(this.env.DB,id,agent.id,'Entregou parecer via '+answer.provider+' ('+answer.text.length+' caracteres) para revisão do VINI');
       return {name:agent.name,text:answer.text};
      }catch(err){
       const reason=String(err.message||err);
@@ -57,7 +59,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     const answer=await callAI(this.env,[{role:'system',content:'Você é o supervisor da equipe. Consolide resultados reais em um relatório útil e inclua limitações. Não alegue que editou código ou executou deploy.'},{role:'user',content:'MISSÃO:\n'+mission.description+'\nPLANO:\n'+plan.slice(0,2500)+'\nEQUIPE:\n'+summary}],mission.provider);
     await agentState(this.env.DB,id,'supervisor','done',answer.text,answer.provider);
     await this.env.DB.prepare("UPDATE missions SET status='done',result=?,error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(answer.text,id).run();
-    await record(this.env.DB,id,'supervisor','Relatório final concluído');
+    await record(this.env.DB,id,'supervisor','Relatório final consolidado via '+answer.provider+' ('+answer.text.length+' caracteres); missão concluída');
     return answer.text;
    });
    return {missionId:id,status:'done',preview:result.slice(0,200)};
