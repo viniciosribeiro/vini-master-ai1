@@ -39,22 +39,21 @@ export function deploymentContext(verifiedProjects){
 }
 export function guardChatDeployment(raw,verifiedProjects=[]){
  let text=cleanChatHtml(raw);
- const verified=new Set(verifiedProjects.flatMap(p=>[p.deploy_url,p.preview_url]).filter(Boolean).map(x=>String(x).replace(/\/$/,'')));
- let removed=0;
+ const verified=new Set(verifiedProjects.flatMap(p=>[p.deploy_status==='online'?p.deploy_url:null,p.preview_status==='online'?p.preview_url:null]).filter(Boolean).map(x=>String(x).replace(/\/$/,'')));
+ let removed=0,recognized=0;
  text=text.replace(DEPLOY_HOST_LINK,(token)=>{
   const suffix=token.match(/[.,;!?]+$/)?.[0]||'';
   const candidate=token.slice(0,token.length-suffix.length);
   let u;try{u=new URL(candidate);}catch{return token;}
   if(!isPlatformHost(u.hostname))return token; // do not silently censor regular outside references
-  if(verified.has(candidate.replace(/\/$/,'')))return token;
+  if(verified.has(candidate.replace(/\/$/,''))){recognized++;return token;}
   removed++;
   return '[endereço de publicação não confirmado]'+suffix;
  });
  const claim=DEPLOY_CLAIM.test(text);
  if(claim){
-  const published=Array.isArray(verifiedProjects)&&verifiedProjects.length>0;
-  if(!published||removed)return 'Ainda não tenho confirmação de que esse projeto foi publicado. A conversa por si só não executa deploy. Não vou te passar um endereço sem verificar. Consulte Projetos → Sites publicados para ver links validados e o status de publicação.';
-  text=text.replace(/acabei de (?:fazer|subir)|fiz o deploy|publiquei/giu,'há uma publicação cadastrada e verificada para');
+  if(!recognized||removed)return 'Ainda não tenho confirmação de que esse projeto foi publicado. A conversa por si só não executa deploy. Não vou te passar um endereço sem verificar. Consulte Projetos → Sites publicados para ver links validados e o status de publicação.';
+  text=text.replace(/acabei de (?:fazer|subir)|fiz o deploy|publiquei/giu,'o painel possui uma publicação verificada para');
  }
  if(removed)text+='\n\nAtenção: removi '+removed+' link(s) de publicação que não constam como verificados. Isso não significa que o projeto esteja no ar.';
  return text.trim();
