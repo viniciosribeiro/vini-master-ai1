@@ -12,7 +12,7 @@ test('voice studio is loaded after existing D1-chat integration',()=>{
  assert.match(worker,/version:'0\.17\.4'/);
 });
 test('PWA caches new voice UI assets with new cache generation',()=>{
- assert.match(sw,/vini-master-shell-v18/);
+ assert.match(sw,/vini-master-shell-v22/);
  assert.match(sw,/vini-voice-live\.js/);assert.match(sw,/vini-voice-live\.css/);
 });
 test('Brazilian voice picker and settings are real browser APIs',()=>{
