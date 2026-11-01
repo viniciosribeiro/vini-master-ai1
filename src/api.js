@@ -48,6 +48,20 @@ export async function handleAPI(req,env){
    const item=await env.DB.prepare("SELECT id,step FROM project_intakes WHERE status='collecting' ORDER BY created_at DESC LIMIT 1").first();
    return respond({active:!!item,step:item?item.step+1:null,total:5});
   }
+  if(path==='/api/live'&&method==='GET'){
+   const raw=Number(url.searchParams.get('after')||'0');
+   const after=Number.isSafeInteger(raw)&&raw>=0?raw:0;
+   const requested=Math.max(5,Math.min(120,Number(url.searchParams.get('limit'))||80));
+   // Initial load is newest-first then chronological; subsequent reads are strictly incremental.
+   const sql=after?
+    'SELECT id,mission_id,agent_id,description,created_at FROM activity WHERE id>? ORDER BY id ASC LIMIT ?':
+    'SELECT id,mission_id,agent_id,description,created_at FROM (SELECT id,mission_id,agent_id,description,created_at FROM activity ORDER BY id DESC LIMIT ?) ORDER BY id ASC';
+   const results=await env.DB.prepare(sql).bind(...(after?[after,requested]:[requested])).all();
+   const events=results.results||[];
+   const head=await env.DB.prepare('SELECT COALESCE(MAX(id),0) AS latest FROM activity').first();
+   const lastId=events.length?events[events.length-1].id:after;
+   return respond({events,lastId,latestId:head?.latest||0,hasMore:after>0&&events.length>=requested,serverTime:new Date().toISOString()});
+  }
   if(path==='/api/state'&&method==='GET'){
    const [a,b,c,d,e,f,g,h]=await Promise.all([
     env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
