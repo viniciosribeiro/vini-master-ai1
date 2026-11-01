@@ -1,3 +1,5 @@
+# VINI MASTER AI — Orquestração Real 0.7.0
+
 # VINI MASTER AI — JARVIS Robot Edition 0.6.1
 
 Interface chat-first, seis robôs minimalistas não humanos em um escritório responsivo, dados reais de tarefas, voz progressiva por APIs do navegador e PWA Android. Publicação via Cloudflare Workers Builds no repositório `viniciosribeiro/vini-master-ai1`.
@@ -105,3 +107,15 @@ O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service wo
 - Retirado o `microphone=()` da política de permissões que bloqueava a autorização do usuário. Chrome Android pode solicitar permissão para o microfone; reconhecimento de voz depende do navegador e do serviço configurado no próprio sistema, não de um backend de streaming dedicado.
 - PWA possui manifest standalone, ícones, cache somente dos assets públicos, aviso offline e botão de instalação com maior contraste. Backend da IA, memória e GitHub continuam exigindo internet.
 - Testes adicionados para o bloqueio de links falsos. Builds são publicados pelo GitHub → Cloudflare. Um teste autenticado de ponta a ponta, a usabilidade real em Chrome Android e um deploy externo real ainda precisam ser verificados na sessão da aplicação.
+
+## Versão 0.7.0: conversar com o supervisor ativa agentes reais
+
+- O chat detecta ordens concretas para corrigir, implementar, revisar, testar, pesquisar e planejar. Perguntas comuns, saudações e comandos negativos continuam como conversa, sem gastar tokens de uma missão.
+- O roteador escolhe só os especialistas necessários e registra em D1 uma missão vinculada a um Workflow real, com ID, status, agentes e trilha de eventos. As respostas informam se a tarefa está na fila, em execução, concluiu ou falhou; nunca anunciam execução se a fila ou a cota bloquearem.
+- O supervisor prepara o plano, especialistas independentes trabalham em etapas duráveis paralelas do Cloudflare Workflows e o supervisor consolida as entregas; a atividade exibida no Escritório é o estado real do banco, não uma simulação. As tarefas analíticas não editam código.
+- Para uma solicitação explícita de programação com um repositório identificado sem ambiguidades e GitHub conectado, um job separado pode gerar arquivos e abrir um PR rascunho via GitHub. Esse caminho não faz merge nem deploy em produção por conta própria. Sem alvo autorizado, a equipe prepara análise e explica o que falta.
+- Entrevistas de novos projetos e o comando PODE INICIAR continuam com o fluxo próprio. Confirmações curtas como Faça tudo podem retomar uma solicitação recente suficientemente identificável sem duplicar uma missão já atribuída.
+- O Chat exibe aviso de missão ativa e atalhos para o Escritório. As estações mostram Aguardando, Trabalhando, Concluído e Falha com base nos registros. Polling é de cerca de 3 s durante missões abertas e mais espaçado quando ocioso, pausado com aba oculta ou sem internet.
+- Mantida política de uso consciente: MAX_DAILY_MISSIONS (padrão 3), limite de jobs de programação (3/dia), necessidade de conexões e permissões GitHub, sem alegar publicação ou testes não realizados.
+
+**Validação:** classificação e delegação verificadas com testes simulados. A confirmação final de uma missão com credenciais do usuário depende de executar um pedido autenticado no aplicativo, não pode ser inferida apenas da presença do Workflow configurado.
