@@ -1,0 +1,45 @@
+{
+  "id": "/",
+  "name": "VINI MASTER AI — Central de Agentes",
+  "short_name": "VINI MASTER",
+  "description": "Equipe de inteligência artificial e projetos, com memória e Cloudflare.",
+  "start_url": "/?source=install",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fc",
+  "theme_color": "#5268e8",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Conversar com Supervisor",
+      "url": "/?tab=chat",
+      "description": "Abrir conversa com o supervisor"
+    },
+    {
+      "name": "Meus Projetos",
+      "url": "/?tab=projects",
+      "description": "Ver projetos e deploys"
+    }
+  ]
+}
