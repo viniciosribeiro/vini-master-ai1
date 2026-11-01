@@ -67,3 +67,35 @@ export async function vercelDeploymentStatus(env,id,teamId,fetcher=fetch){
  const data=await vercelRequest(token,'/v13/deployments/'+id,{teamId,fetcher});
  return {id:data.id||id,status:data.readyState||data.status||'UNKNOWN',url:data.url||'',target:data.target||'preview',createdAt:data.createdAt||null,readyAt:data.ready||null};
 }
+
+
+/**
+ * Independent Git-free preview deployment for small static demos.
+ * Requires an existing Vercel token; never targets production.
+ * The dedicated preview lab cannot overwrite owners' real Vercel projects.
+ */
+export async function initiateDirectStaticPreview(env,files,teamId='',fetcher=fetch){
+ if(!Array.isArray(files)||files.length<1||files.length>6)throw Error('Envie de 1 a 6 arquivos.');
+ const allowed=/^(?:[a-z0-9_-]+\/){0,3}[a-z0-9_-]+\.(?:html|css|js|json|svg)$/i;
+ const seen=new Set();let total=0;
+ const validated=files.map(f=>{
+  if(!f||typeof f!=='object'||typeof f.file!=='string'||!allowed.test(f.file)||f.file.includes('..')||f.file.toLowerCase()==='vercel.json')throw Error('Nome de arquivo de prévia inválido.');
+  if(typeof f.data!=='string'||f.data.length>18000)throw Error('Conteúdo de arquivo muito grande.');
+  if(seen.has(f.file))throw Error('Arquivo repetido.');seen.add(f.file);
+  total+=new TextEncoder().encode(f.data).length;
+  return {file:f.file,data:f.data,encoding:'utf-8'};
+ });
+ if(!seen.has('index.html'))throw Error('Prévia estática precisa de index.html.');
+ if(total>20000)throw Error('A prévia excedeu 20 KB; arquivos maiores exigem o pipeline de build/cloud.');
+ const token=await readVercelToken(env);if(!token)throw Error('Conecte a Vercel nas Configurações antes da prévia direta.');
+ const name='vini-agent-preview-lab';
+ // No gitSource, deploymentId, target, alias, env or secrets: strict preview-only upload.
+ const response=await vercelRequest(token,'/v13/deployments',{method:'POST',teamId,fetcher,body:{
+  name,files:validated,projectSettings:{framework:null},meta:{viniSource:'direct-static-preview'}
+ }});
+ const id=String(response.id||''),url=String(response.url||'');
+ if(!/^dpl_[a-zA-Z0-9]{8,80}$/.test(id))throw Error('Vercel não confirmou um ID válido. Confira o dashboard antes de repetir.');
+ if(response.target==='production')throw Error('ATENÇÃO: destino produção inesperado. Não considere autorizado; inspecione no painel Vercel.');
+ if(url&&!/^[a-z0-9.-]+\.vercel\.app$/i.test(url))throw Error('URL de prévia Vercel inesperada.');
+ return {id,projectId:response.projectId||'',name,url:url?'https://'+url:'',status:response.readyState||response.status||'QUEUED',target:'preview',source:'direct_upload',files:validated.map(f=>f.file)};
+}

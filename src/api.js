@@ -1,6 +1,6 @@
 import {authorizeSession,verifyMasterHeader,issueCookie,expireCookie,sameOriginMutation} from './session-auth.js';
 import {readExecutionLedger} from './execution-ledger.js';
-import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVercelProjects,getVercelDeployments,initiatePreviewRedeploy,vercelDeploymentStatus} from './vercel-connector.js';
+import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVercelProjects,getVercelDeployments,initiatePreviewRedeploy,initiateDirectStaticPreview,vercelDeploymentStatus} from './vercel-connector.js';
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {isWorkStatusConcern,readWorkStatus,workStatusReply} from './work-status.js';
 import {listThreads,createThread,getThread,chooseThread,updateThread,removeThread,getThreadMessages,saveThreadMessage,chatTitle} from './chat-threads.js';
@@ -153,6 +153,32 @@ export async function handleAPI(req,env){
   if(path==='/api/vercel/builds'&&method==='GET'){
    const data=await env.DB.prepare('SELECT id,project_id,project_name,source_deployment_id,preview_url,status,created_at,updated_at FROM vercel_builds ORDER BY created_at DESC LIMIT 12').all();
    return respond({builds:data.results||[]});
+  }
+  if(path==='/api/vercel/direct-preview'&&method==='POST'){
+   if(!sameOriginMutation(req))return fail('Origem da solicitação de deploy não autorizada.',403);
+   const body=await parse(req);
+   if(body.confirm!=='CRIAR PREVIA')return fail('Confirme explicitamente a criação de uma PRÉVIA, não produção.',409);
+   if(body.target&&body.target!=='preview')return fail('Produção não é suportada por esta rota.',403);
+   const pid=String(body.projectId||'');
+   let projectName='VINI Preview Lab';
+   if(pid){
+    if(!safeId(pid))return fail('ID de projeto inválido.',400);
+    const project=await getProject(env.DB,pid);if(!project||project.status==='trashed')return fail('Projeto não encontrado ou indisponível.',404);
+    projectName=project.name;
+   }
+   const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM vercel_builds WHERE date(created_at)=date('now')").first();
+   if(Number(count?.n||0)>=3)return fail('Limite global de 3 prévias Vercel por dia atingido.',429);
+   try{
+    const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+    const result=await initiateDirectStaticPreview(env,body.files,team?.value||'');
+    await env.DB.prepare('INSERT INTO vercel_builds(id,project_id,project_name,source_deployment_id,preview_url,status) VALUES(?,?,?,?,?,?)')
+     .bind(result.id,pid||'preview-lab',projectName,'direct_upload',result.url,result.status).run();
+    await log(env,'infra','Prévia sem Git aceita pela Vercel: '+projectName+' · '+result.id);
+    return respond({deployment:result,execution:{kind:'vercel_direct_preview',status:result.status,id:result.id,source:'direct_upload',gitHubRequired:false,production:false,ready:false}},201);
+   }catch(e){
+    await log(env,'infra','Prévia direta Vercel falhou: '+String(e.message||e).slice(0,140));
+    return fail('Deploy direto não confirmado: '+String(e.message||e).slice(0,180),503);
+   }
   }
   if(path==='/api/vercel/preview-redeploy'&&method==='POST'){
    const body=await parse(req),projectId=String(body.projectId||''),deploymentId=String(body.deploymentId||'');
