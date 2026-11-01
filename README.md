@@ -1,3 +1,7 @@
+# VINI MASTER AI — JARVIS Robot Edition (0.5)
+
+Interface chat-first, seis robôs minimalistas não humanos em um escritório responsivo, dados reais de tarefas, voz progressiva por APIs do navegador e PWA Android. Publicação via Cloudflare Workers Builds no repositório `viniciosribeiro/vini-master-ai1`.
+
 # VINI MASTER AI — Alpha 0.4 | Projetos, escritório vivo e PWA Android
 
 **Aplicação publicada:** https://vini-master-ai1.viniciosribeiro.workers.dev/
@@ -82,3 +86,11 @@ O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service wo
 - Cloudflare Workers Builds: https://developers.cloudflare.com/workers/ci-cd/builds/
 - Cloudflare Workflows: https://developers.cloudflare.com/workflows/
 - GitHub tokens fine-grained: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
+
+## Mudanças 0.5 (Robot Edition)
+- O chat virou a tela inicial. A aba Escritório contém seis robôs de CSS/HTML (VINI, Programador, Designer, QA, Infra, Pesquisa), sem rostos humanos.
+- Os estados de trabalho e avisos vêm exclusivamente das tarefas/atividades reais do banco D1. Não inventar progresso ou agentes ocupados.
+- Barra de chat persistente fora da página de Chat, abertura de agente com detalhes, avatar JARVIS com animação leve e adaptatividade para telas de 320px em diante.
+- Voz opcional via reconhecimento Web Speech e síntese de voz do navegador em pt-BR, onde houver suporte e permissão; não é conversa de voz streaming nem garantia de compatibilidade em qualquer navegador. Mensagens só são enviadas ao servidor quando o reconhecimento termina; frases faladas podem usar serviços do próprio navegador.
+- O chat reduz o holograma quando o histórico cresce. Mantidos autenticação, GitHub, D1, Workflows, NVIDIA, Cloudflare AI, catálogo de projetos e PWA.
+- Testar autenticado: conversa, voz no Chrome Android, criação de missão e atualização real de estado ainda requerem sessão do usuário e permissões de microfone.
