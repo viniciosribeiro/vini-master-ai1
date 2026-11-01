@@ -33,6 +33,8 @@ function updateStatus(){
  $('metric-working').textContent=working;
  $('metric-provider').textContent=state.provider==='auto'?'Automático':state.provider==='nvidia'?'NVIDIA':'Cloudflare AI';
  $('provider-select').value=state.provider||'auto';
+ if($('cf-provider-state'))$('cf-provider-state').textContent=state.hasCloudflare?'Binding automático configurado · pronto para testar':'Binding AI ausente no Worker';
+ if($('nv-provider-state'))$('nv-provider-state').textContent=state.hasNvidia?'Chave cadastrada · teste disponível':'Chave ainda não cadastrada';
  document.querySelectorAll('.station').forEach(node=>{
   const run=state.runs.find(r=>r.agent_id===node.dataset.agent);
   const status=run?.status||'idle';
@@ -137,5 +139,36 @@ $('access-cancel').addEventListener('click',()=>$('access-dialog').close());
 $('access-form').addEventListener('submit',async e=>{e.preventDefault();token=$('access-token').value.trim();sessionStorage.setItem(storageKey,token);$('access-dialog').close();updateStatus();await refresh();await loadChat();});
 $('export-data').addEventListener('click',async()=>{try{const data=await api('/export');const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vini-master-memoria.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}catch(e){notify(e.message);}});
 $('erase-chat').addEventListener('click',async()=>{if(!confirm('Apagar TODAS as mensagens? Memórias fixadas permanecem.'))return;try{await api('/conversation',{method:'DELETE',body:{confirm:'APAGAR'}});await loadChat();await refresh();notify('Histórico apagado.');}catch(e){notify(e.message);}});
+function providerFeedback(message){const node=$('provider-feedback');if(node)node.textContent=message;notify(message);}
+async function probe(provider,button){
+ if(!token){show('settings');openAccess();return;}
+ button.disabled=true;providerFeedback('Testando '+(provider==='cloudflare'?'Cloudflare AI':'NVIDIA')+' com uma chamada real...');
+ try{const result=await api('/providers/test',{method:'POST',body:{provider}});
+  providerFeedback('Conexão confirmada: '+result.provider+' · '+result.model+' · Resposta: '+result.reply);
+ }catch(err){providerFeedback('Falha no teste de '+provider+': '+err.message);}
+ finally{button.disabled=false;}
+}
+$('open-provider-connect').addEventListener('click',()=>{show('settings');$('nvidia-api-key').focus({preventScroll:true});});
+$('test-cf').addEventListener('click',e=>probe('cloudflare',e.currentTarget));
+$('test-nvidia').addEventListener('click',e=>probe('nvidia',e.currentTarget));
+$('nvidia-connect-form').addEventListener('submit',async e=>{
+ e.preventDefault();if(!token){openAccess();return;}
+ const input=$('nvidia-api-key'),button=$('connect-nvidia'),key=input.value.trim();
+ if(!key)return;
+ button.disabled=true;providerFeedback('Conferindo a chave com a NVIDIA...');
+ try{
+  const result=await api('/integrations/nvidia',{method:'POST',body:{key}});
+  input.value='';providerFeedback('NVIDIA conectada! Modelo: '+result.model+'. A chave foi cifrada no D1.');
+  await refresh();
+ }catch(err){providerFeedback('NVIDIA não conectada: '+err.message);}
+ finally{button.disabled=false;}
+});
+$('disconnect-nvidia').addEventListener('click',async e=>{
+ if(!confirm('Desconectar a NVIDIA e apagar a chave cadastrada?'))return;
+ const button=e.currentTarget;button.disabled=true;
+ try{const result=await api('/integrations/nvidia',{method:'DELETE'});
+  await refresh();providerFeedback(result.externalSecret?'Chave do painel removida; ainda existe NVIDIA_API_KEY nos secrets do Worker.':'NVIDIA desconectada.');
+ }catch(err){providerFeedback(err.message);}finally{button.disabled=false;}
+});
 updateStatus();if(token){refresh();loadChat()}else{notify('Configure MASTER_TOKEN na Cloudflare e insira a chave no cadeado para usar a IA.');}
 setInterval(()=>{if(token)refresh()},10000);
