@@ -39,18 +39,23 @@ const requested=new URLSearchParams(location.search).get('tab');
 switchTo(['office','projects','missions','memory','settings'].includes(requested)?requested:'chat');
 const tagline=document.querySelector('.subhead');if(tagline)tagline.textContent='JARVIS · Central Inteligente';
 const sheet=document.createElement('dialog');sheet.id='jarvis-agent-sheet';sheet.className='jarvis-agent-sheet';
-sheet.innerHTML='<div class="sheet-top"><strong id="jarvis-sheet-title">Agente</strong><button id="jarvis-sheet-close" aria-label="Fechar" type="button">×</button></div><div class="jarvis-sheet-bot"></div><p id="jarvis-sheet-status"></p><div id="jarvis-sheet-content"></div><button class="jarvis-sheet-chat" type="button">Conversar com o supervisor</button>';
+sheet.innerHTML='<div class="sheet-top"><strong id="jarvis-sheet-title">Agente</strong><button id="jarvis-sheet-close" aria-label="Fechar" type="button">×</button></div><div class="jarvis-sheet-bot"></div><p id="jarvis-sheet-status"></p><div id="jarvis-sheet-content"></div><button class="jarvis-sheet-chat" type="button">Conversar com o supervisor</button><button class="jarvis-sheet-log" type="button">◉ Ver ações reais e histórico deste agente</button>';
 document.body.append(sheet);
 $('jarvis-sheet-close').addEventListener('click',()=>sheet.close());
 sheet.addEventListener('click',e=>{if(e.target===sheet)sheet.close();});
 sheet.querySelector('.jarvis-sheet-chat').addEventListener('click',()=>{sheet.close();switchTo('chat');});
+sheet.querySelector('.jarvis-sheet-log').addEventListener('click',()=>{
+ const agent=sheet.dataset.agent||'all';sheet.close();window.jarvisOpenLive?.(agent);
+});
 document.querySelectorAll('.station[data-agent]').forEach(station=>{
  station.addEventListener('click',e=>{
   e.stopImmediatePropagation();e.preventDefault();
+  sheet.dataset.agent=station.dataset.agent;
   const id=station.dataset.agent,a=typeof state!=='undefined'?state.agents.find(x=>x.id===id):null,r=typeof state!=='undefined'?state.runs.find(x=>x.agent_id===id):null;
   $('jarvis-sheet-title').textContent=(a?.name||labels[id]||id)+' · '+specialties[id];
   sheet.querySelector('.jarvis-sheet-bot').innerHTML=robot();
-  $('jarvis-sheet-status').textContent=station.dataset.status==='working'?'● Tarefa em andamento':'● Disponível';
+  const expression=station.dataset.expression;
+  $('jarvis-sheet-status').textContent=expression==='working'?'● Trabalhando de verdade':expression==='waiting'?'◌ Aguardando Workflow':expression==='success'?'● Etapa concluída':expression==='error'?'● Falha registrada':'● Sem trabalho ativo';
   $('jarvis-sheet-content').textContent=r?.output||station.querySelector('.agent-popup')?.textContent||'Sem resultados recentes registrados.';
   sheet.showModal();
  },true);
