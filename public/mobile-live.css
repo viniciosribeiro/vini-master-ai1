@@ -147,3 +147,16 @@ dialog:not(.agent-sheet){width:min(95vw,480px);padding:23px;border-radius:20px}.
  .project-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:360px){.project-actions{grid-template-columns:1fr}}
+
+
+/* Editable long-term working style profile */
+.work-profile{padding:16px;border:1px solid #e1e6f3;border-radius:16px;background:#f7f9ff;margin:15px 0 22px;min-width:0}
+.work-profile h2{margin:0 0 8px!important;font-size:1.07rem}
+.work-profile>p{color:#687994;font-size:.84rem;margin-bottom:13px}
+.work-profile form{display:grid;gap:10px}
+.work-profile label{font-size:.85rem;font-weight:700;color:#344768}
+.work-profile textarea{font-size:15px;line-height:1.5;min-width:0;max-width:100%;min-height:170px;resize:vertical;margin:0}
+.work-profile-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.work-profile button{min-height:46px;white-space:normal}
+#work-profile-feedback{font-size:.85rem;line-height:1.5;color:#405983;margin-top:8px}
+@media(max-width:380px){.work-profile-actions{grid-template-columns:1fr}}
