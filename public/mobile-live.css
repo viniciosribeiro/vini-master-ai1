@@ -204,3 +204,11 @@ dialog:not(.agent-sheet){width:min(95vw,480px);padding:23px;border-radius:20px}.
 @media(prefers-reduced-motion:reduce){
  .station[data-status=working] .mini-person,.station[data-status=working] .station-art svg,.office-action-toast,.station .agent-popup{animation:none!important}
 }
+
+/* Gentle idle motion shows that the office is alive without inventing work. */
+.station[data-status=idle] .station-art svg{animation:officeIdle 6.5s ease-in-out infinite!important}
+.station[data-status=idle] .mini-person{animation:officeIdle 5.4s ease-in-out infinite!important}
+.office:has(.station[data-status=working]) .connections path{animation:officeFlow 1.6s linear infinite}
+@keyframes officeIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes officeFlow{to{stroke-dashoffset:-30}}
+@media(prefers-reduced-motion:reduce){.station[data-status=idle] .station-art svg,.station[data-status=idle] .mini-person,.office .connections path{animation:none!important}}
