@@ -32,7 +32,7 @@ test('VINI does not claim to rebuild before Vercel confirms execution',()=>{
  const old='Agora vou entrar na Vercel e forçar o build remoto.';
  const guarded=guardUnsupportedActionClaims(old);
  assert.equal(guarded.intercepted,true);
- assert.match(guarded.text,/Não executei esse build/);
+ assert.match(guarded.text,/Não executei ações externas nesta resposta/);
  assert.equal(isUnsupportedDeploymentRequest('Force o build na Vercel'),true);
 });
 
