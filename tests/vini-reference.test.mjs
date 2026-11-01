@@ -9,7 +9,7 @@ const html=text('public/index.html');
 const css=text('public/vini-reference.css');
 const js=text('public/vini-reference.js');
 const sw=text('public/sw.js');
-const assets=['ref-office.webp','ref-neural.webp','ref-robot.webp','ref-lighthouse.webp'];
+const assets=['ref-office.webp','ref-neural.webp','ref-robot.webp','ref-lighthouse.webp','ref-thumb-tour.webp','ref-thumb-stay.webp','ref-thumb-food.webp','ref-thumb-wifi.webp'];
 
 test('all 4 cropped assets from approved reference exist and are genuine WebP',()=>{
  for(const name of assets){
@@ -50,3 +50,5 @@ test('images are decorative with no secret API data leakage',()=>{
  assert.doesNotMatch(js,/MASTER_TOKEN|Bearer\s|api\.vercel\.com/);
  assert.doesNotMatch(css,/@import/);
 });
+
+test('project thumbnail selection uses project names and recomputes after D1 render',()=>{assert.match(js,/function decoratePortfolio\(/);assert.match(js,/MutationObserver\(apply\)/);assert.match(js,/card\.dataset\.vrKind/);});
