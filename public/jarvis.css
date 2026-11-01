@@ -361,3 +361,15 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
 #jarvis-network-status{position:fixed;left:50%;top:68px;transform:translateX(-50%);width:min(94vw,560px);z-index:120;padding:11px 15px;text-align:center;border:1px solid #efb35a;border-radius:14px;background:#43301e;color:#fff0bc;box-shadow:0 10px 30px #0009;font-size:13px}
 #jarvis-network-status[hidden]{display:none!important}
 @media(max-width:380px){#install-vini.install-vini{font-size:10px!important;max-width:83px;white-space:normal!important;line-height:1.15}}
+
+/* Compact conversational header for 360–430px phones. */
+@media(max-width:780px){
+ .jarvis-chat-header{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center!important;gap:8px!important}
+ .jarvis-chat-header>div{display:flex!important;flex-direction:column;align-items:flex-start!important;gap:3px!important;min-width:0}
+ .jarvis-chat-header .jarvis-chat-title{font-size:clamp(16px,4.2vw,19px)!important;line-height:1.15!important}
+ .jarvis-chat-header .chat-status{font-size:10px!important;line-height:1.2!important}
+ #jarvis-chat-office{font-size:12px!important;font-weight:750!important;border-radius:13px!important;min-width:92px!important;max-width:115px!important;padding:8px 10px!important;min-height:44px!important;line-height:1.2!important}
+ #section-chat .reply-paragraph{font-size:13px!important;line-height:1.55!important}
+ #section-chat .reply-provider{font-size:11px!important}
+ #section-chat .messages{overscroll-behavior:contain!important;scrollbar-width:thin}
+}
