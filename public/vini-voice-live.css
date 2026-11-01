@@ -53,3 +53,13 @@
 #section-chat .vini-chat-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
 #section-chat .vini-chat-actions .vs-open{margin:0!important;min-height:36px!important;padding:7px 13px!important;flex:0 1 auto}
 @media(max-width:420px){#section-chat .vini-chat-actions .vs-open{flex:1 1 100%;justify-content:center}}
+
+/* R4: natural OpenAI voice, explicit per-day spend authorization. */
+.vs-consent{width:100%;min-height:46px;border:1px solid #27dbce!important;border-radius:12px!important;background:linear-gradient(110deg,#054d69,#21428d)!important;color:#f2fdff!important;font-size:13px;font-weight:850;padding:10px 12px}
+.vs-consent:hover{box-shadow:0 0 20px #15d6f94b}
+.vs-consent:focus-visible{outline:3px solid #8afaff!important;outline-offset:3px}
+.vs-dialog .vs-settings[open]{border-color:#379ab3!important}
+.vs-dialog .vs-disclaimer{font-size:11px!important;color:#b9d7e7!important;margin:9px 0 0!important;line-height:1.5!important}
+.vs-dialog[data-status=error] .vs-status{color:#ffcfab!important}
+.vs-dialog[data-status=speaking] .vs-core{animation-duration:1.2s!important}
+@media(max-width:780px){.vs-consent{font-size:12px;padding:10px 8px}.vs-dialog .vs-settings{margin-bottom:4px}}

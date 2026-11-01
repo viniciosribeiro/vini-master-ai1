@@ -17,6 +17,7 @@ import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
 import {CF_MODELS,DEFAULT_CF,DEFAULT_NVIDIA,configuredModel,validateModel,paidModel,selectModel} from './model-catalog.js';
 import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider,verifySelectedModel} from './ai.js';
 import {ensureSchema} from './bootstrap.js';
+import {handleNaturalVoice} from './voice-tts.js';
 const respond=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const fail=(message,status=400)=>respond({error:message},status);
 const safeId=x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x||'');
@@ -58,6 +59,10 @@ export async function handleAPI(req,env){
  const url=new URL(req.url),path=url.pathname,method=req.method;
  try{
   await ensureSchema(env.DB);
+  if(path==='/api/voice/tts'&&(method==='GET'||method==='POST')){
+   if(method==='POST'&&!sameOriginMutation(req))return fail('Origem da voz não autorizada.',403);
+   return handleNaturalVoice(req,env,env.DB);
+  }
   if(path==='/api/intake'&&method==='GET'){
    await setupIntakes(env.DB);
    const tid=url.searchParams.get('threadId')||'';
