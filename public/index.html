@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f3f6fc"><title>VINI MASTER AI | Central de Agentes</title>
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=11">
-<script src="/app.js?v=11" defer></script><script src="/mobile-live.js?v=9" defer></script><script src="/projects.js?v=11" defer></script></head>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=12">
+<script src="/app.js?v=12" defer></script><script src="/mobile-live.js?v=12" defer></script><script src="/projects.js?v=12" defer></script><script src="/pwa.js?v=12" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
 <nav aria-label="Navegação"><button class="nav active" data-section="office">⌂ <span>Painel</span></button><button class="nav" data-section="agents">♙ <span>Agentes</span></button><button class="nav" data-section="projects">▦ <span>Projetos</span><span class="nav-alert" id="idea-count" hidden></span></button><button class="nav" data-section="missions">▤ <span>Missões</span></button><button class="nav" data-section="chat">▢ <span>Conversas</span></button><button class="nav" data-section="memory">◇ <span>Memórias</span></button><button class="nav" data-section="settings">⚙ <span>Configurações</span></button></nav>
 <div class="side-foot">VINI MASTER AI<small>Alpha 0.2 · Cloudflare</small></div></aside>
 <div class="main">
-<header class="top"><div><strong>VINI MASTER AI</strong><span class="subhead">Central de Agentes</span></div><div class="top-actions"><span id="system-status" class="system-status">● Sem conexão</span><button id="open-access" class="icon-btn" title="Acesso seguro">🔐</button><span class="avatar">VM</span></div></header>
+<header class="top"><div><strong>VINI MASTER AI</strong><span class="subhead">Central de Agentes</span></div><div class="top-actions"><button type="button" id="install-vini" class="install-vini" hidden>Instalar app</button><span id="system-status" class="system-status">● Sem conexão</span><button id="open-access" class="icon-btn" title="Acesso seguro">🔐</button><span class="avatar">VM</span></div></header>
 <div id="notification" role="status" class="notice" hidden></div>
 <main>
 <section id="section-office" class="view">
@@ -29,7 +30,7 @@
 </section>
 <section id="section-projects" class="view" hidden>
 <div class="panel padded projects-panel">
-<div class="projects-top"><div><h1>Meus projetos</h1><p>Organize seus sistemas, ideias e repositórios. Alterações no catálogo não apagam sites nem repositórios externos.</p></div><div class="projects-tools"><button class="secondary" id="projects-refresh" type="button">Atualizar</button><button class="secondary" id="projects-import" type="button">Importar GitHub</button></div></div>
+<div class="projects-top"><div><h1>Meus projetos</h1><p>Organize seus sistemas, ideias e repositórios. Alterações no catálogo não apagam sites nem repositórios externos.</p></div><div class="projects-tools"><button class="primary" type="button" id="projects-chat-interview">+ Criar com IA</button><button class="secondary" id="projects-refresh" type="button">Atualizar</button><button class="secondary" id="projects-import" type="button">Importar GitHub</button></div></div>
 <form id="project-add-form" class="project-create">
 <h2>Adicionar um projeto</h2>
 <label>Nome<input id="project-new-name" maxlength="90" placeholder="Ex.: Sereia360" required></label>
@@ -46,6 +47,16 @@
 <label>Hospedagem<select id="project-edit-platform"><option value="cloudflare">Cloudflare</option><option value="vercel">Vercel</option><option value="other">Outro</option></select></label>
 <label>GitHub<input id="project-edit-repo" placeholder="dono/repositorio" autocomplete="off"></label>
 <button class="primary" type="submit">Salvar alterações</button></form>
+<section class="project-deployments">
+<h2>Sites publicados</h2><p>Endereços de produção e prévia. O sistema identifica quando o GitHub registra uma publicação bem-sucedida; você também pode informar o link manualmente. Um link registrado não significa que a página foi testada no navegador.</p>
+<div id="project-deploy-links" class="deploy-links"></div>
+<form id="project-deploy-form">
+<label>Site em produção (https://)<input id="project-deploy-url" type="url" inputmode="url" autocomplete="url" placeholder="https://meu-projeto.workers.dev"></label>
+<label>Prévia / teste (https://)<input id="project-preview-url" type="url" inputmode="url" placeholder="https://preview-do-projeto.vercel.app"></label>
+<button class="secondary" type="submit">Salvar links</button></form>
+<button class="secondary" id="project-sync-deployments" type="button">Procurar deploys no GitHub</button>
+<p id="deploy-check-status" class="muted" role="status" aria-live="polite"></p>
+</section>
 <div class="project-actions"><button class="secondary" id="project-archive" type="button">Arquivar</button><button class="secondary" id="project-restore" type="button">Restaurar / Ativar</button><button class="danger" id="project-trash" type="button">Enviar à lixeira</button><button class="danger" id="project-permanent" type="button">Excluir registro definitivamente</button></div>
 <div class="project-intelligence">
 <h2>Equipe programando</h2><p>A IA pode criar arquivos reais e abrir um PR rascunho no GitHub. Não faz merge em produção sem revisão; compilações dependem do CI do repositório.</p>
@@ -59,7 +70,8 @@
 </div></section>
 <section id="section-agents" class="view" hidden><div class="panel padded"><h1>Equipe de especialistas</h1><p>Selecione um agente na lista para conhecer sua função e atividade atual.</p><div id="agent-list" class="agent-list"></div><div id="agent-detail" class="detail">Clique em um especialista.</div></div></section>
 <section id="section-missions" class="view" hidden><div class="panel padded"><h1>Missões da equipe</h1><p>Uma missão é analisada pelo supervisor e pelos cinco especialistas. As análises são textuais; não editam sites automaticamente.</p><form id="mission-form"><label for="mission-description">Descreva o objetivo</label><textarea id="mission-description" rows="4" maxlength="12000" placeholder="Ex.: Planeje uma nova funcionalidade de reservas com requisitos, arquitetura, design e testes." required></textarea><button class="primary" type="submit">Iniciar missão</button></form><h2>Histórico de missões</h2><div id="mission-list"></div><div id="mission-detail" class="detail"></div></div></section>
-<section id="section-chat" class="view" hidden><div class="panel padded"><h1>Histórico de conversas</h1><p>Mensagens anteriores são preservadas e podem ser recuperadas.</p><div id="messages" class="messages"></div><form id="chat-form" class="inline-form"><input id="chat-message" maxlength="8000" placeholder="Converse com o VINI MASTER..." required><button type="submit" class="primary">Enviar ↗</button></form></div></section>
+<section id="section-chat" class="view" hidden><div class="panel padded"><h1>Histórico de conversas</h1><p>Mensagens anteriores são preservadas e podem ser recuperadas.</p><div id="messages" class="messages"></div><button id="begin-project-chat" class="secondary begin-project-chat" type="button">+ Novo projeto com entrevista</button>
+<form id="chat-form" class="inline-form"><input id="chat-message" maxlength="8000" placeholder="Converse com o VINI MASTER..." required><button type="submit" class="primary">Enviar ↗</button></form></div></section>
 <section id="section-memory" class="view" hidden><div class="panel padded"><h1>Memória permanente</h1><section class="work-profile"><h2>Como eu gosto de trabalhar</h2><p>O supervisor organiza preferências e padrões extraídos das nossas conversas e projetos. Você pode corrigir o perfil ou apagá-lo.</p>
 <form id="work-profile-form"><label for="work-profile-text">Meu perfil de trabalho</label><textarea id="work-profile-text" rows="8" maxlength="4500" placeholder="O que você valoriza nos projetos, regras, estilo, tecnologias..."></textarea>
 <button class="primary" type="submit">Salvar meu perfil</button></form>
