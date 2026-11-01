@@ -56,6 +56,18 @@ document.querySelectorAll('.station[data-agent]').forEach(station=>{
  },true);
 });
 $('jarvis-chat-office')?.addEventListener('click',()=>switchTo('office'));
+$('jarvis-chat-activities')?.addEventListener('click',()=>switchTo('office'));
+const gear=document.createElement('button');
+gear.type='button';gear.className='mobile-settings';gear.setAttribute('aria-label','Abrir configurações');gear.textContent='⚙';
+document.querySelector('.top-actions')?.append(gear);
+gear.addEventListener('click',()=>switchTo('settings'));
+const engines=document.querySelector('.engines'),settings=document.querySelector('#section-settings .padded'),officeBottom=document.querySelector('#section-office .bottom');
+function placeEngines(){
+ if(window.innerWidth<=780&&engines&&settings&&!settings.contains(engines))settings.append(engines);
+ if(window.innerWidth>780&&engines&&officeBottom&&!officeBottom.contains(engines))officeBottom.append(engines);
+}
+placeEngines();window.addEventListener('resize',placeEngines);
+
 $('jarvis-chat-new')?.addEventListener('click',()=>$('begin-project-chat')?.click());
 const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false,voiceEnabled=false;
 const mics=()=>[$('jarvis-chat-mic'),$('jarvis-dock-mic')].filter(Boolean);
