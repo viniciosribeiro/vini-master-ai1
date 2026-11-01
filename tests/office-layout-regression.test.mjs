@@ -16,7 +16,7 @@ test('Original interactive office and timeline are visible (regression fix)',()=
  assert.match(css,/#section-office>\.workspace>\.activity\{min-width:0;width:auto/);
  assert.match(html,/<section id="section-office"/);
  assert.match(html,/class="office panel"/);
- assert.match(html,/class="activity panel"/);
+ assert.match(html,/class="activity panel(?: |")/);
 });
 test('Supervisor and specialist office cards remain visible and responsive',()=>{
  assert.match(css,/\.vc-office-center\{display:grid!important/);
