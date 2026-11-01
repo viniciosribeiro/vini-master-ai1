@@ -1,3 +1,4 @@
+import {hasGitHub} from './github-engine.js';
 import {createProject} from './project-manager.js';
 import {AGENTS} from './ai.js';
 export const QUESTIONS=[
@@ -57,8 +58,19 @@ export async function handleIntake(env,message,provider='auto'){
  try{project=await createProject(db,data);}
  catch(e){return {reply:'Não consegui criar o projeto: '+String(e.message||e)+'. Podemos corrigir as informações e tentar novamente.',intake:{id:running.id,status:'collecting'}};}
  await db.prepare("UPDATE project_intakes SET status='started',answers_json=?,step=?,project_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(JSON.stringify(answers),answers.length,project.id,running.id).run();
- let launched=false,jobId='',note='';
- if(env.MISSIONS){
+ let launched=false,jobId='',note='',codeStarted=false;
+ if(project.repo&&env.MISSIONS&&await hasGitHub(db)){
+  try{
+   const count=await db.prepare("SELECT COUNT(*) n FROM code_jobs WHERE date(created_at)=date('now')").first();
+   if((count?.n||0)<3){
+    jobId=crypto.randomUUID();
+    await db.prepare('INSERT INTO code_jobs(id,project_id,request,provider) VALUES(?,?,?,?)').bind(jobId,project.id,'Implemente a primeira versão do projeto descrito a seguir, respeitando as restrições de escopo e criando um PR rascunho para revisão. '+data.description,provider).run();
+    await env.MISSIONS.create({id:jobId,params:{codeJobId:jobId}});
+    launched=true;codeStarted=true;
+   }
+  }catch{note=' Não foi possível iniciar automaticamente a programação; o projeto foi salvo para delegação posterior.';}
+ }
+ if(!codeStarted&&env.MISSIONS){
   try{
    const count=await db.prepare("SELECT COUNT(*) n FROM missions WHERE date(created_at)=date('now')").first();
    const limit=Math.min(20,Math.max(1,Number(env.MAX_DAILY_MISSIONS)||3));
@@ -72,5 +84,5 @@ export async function handleIntake(env,message,provider='auto'){
    }else note=' O limite de missões de hoje foi atingido; o projeto foi salvo, mas o planejamento ficará pendente.';
   }catch(e){note=' O projeto foi salvo, mas não foi possível iniciar a missão automática; veja o painel de Missões.';}
  }
- return {reply:'Criei **'+project.name+'** no seu portfólio, com destino **'+(data.platform==='other'?'a definir':data.platform==='cloudflare'?'Cloudflare':'Vercel')+'**. Salvei nossas respostas para manter o contexto.\n\n'+(launched?'A equipe recebeu uma missão real de planejamento; acompanhe o andamento em **Missões**.':'O projeto está registrado e pronto para as próximas etapas.')+(project.repo?'\n\nRepositório vinculado: '+project.repo+'.':'\n\nAinda não há repositório GitHub vinculado. A geração de código e o deploy precisam dessa integração; não vou anunciar um site publicado sem URL confirmada.')+note,intake:{id:running.id,status:'started',projectId:project.id,missionId:jobId||null}};
+ return {reply:'Criei **'+project.name+'** no seu portfólio, com destino **'+(data.platform==='other'?'a definir':data.platform==='cloudflare'?'Cloudflare':'Vercel')+'**. Salvei nossas respostas para manter o contexto.\n\n'+(codeStarted?'O Programador recebeu uma tarefa real: vai preparar arquivos em uma branch e abrir um **PR rascunho**. Acompanhe em **Projetos**; ainda não haverá deploy automático em produção.':launched?'A equipe recebeu uma missão real de planejamento; acompanhe o andamento em **Missões**.':'O projeto está registrado e pronto para as próximas etapas.')+(project.repo?'\n\nRepositório vinculado: '+project.repo+'.':'\n\nAinda não há repositório GitHub vinculado. A geração de código e o deploy precisam dessa integração; não vou anunciar um site publicado sem URL confirmada.')+note,intake:{id:running.id,status:'started',projectId:project.id,missionId:codeStarted?null:jobId||null,codeJobId:codeStarted?jobId:null}};
 }
