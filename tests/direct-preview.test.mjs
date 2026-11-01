@@ -40,8 +40,16 @@ test('Require index.html, safe paths, no duplicate files or oversized payloads',
 });
 test('Preview deployment is explicitly not GitHub-backed',()=>{
  assert.match(connector,/files:validated/);
- assert.match(connector,/projectSettings:\{framework:null\}/);
+ assert.match(connector,/const existingProjects=await getVercelProjects/);
+ assert.match(connector,/history\.some\(d=>d\.target==='production'\)/);
+ assert.match(connector,/project:lab\.id,files:validated/);
+ assert.doesNotMatch(connector,/projectSettings:\{framework:null\}/);
  assert.match(connector,/name='vini-agent-preview-lab'/);
  assert.doesNotMatch(frontend,/\/api\/github/);
  assert.match(frontend,/\/vercel\/direct-preview/);
+});
+
+test('NEW preview lab is blocked before deployment to protect against Vercel first production deploy',()=>{
+ assert.match(connector,/if\(!lab\)throw Error\('Laboratório de prévias não existe/);
+ assert.match(connector,/não foi possível provar que este projeto já passou/);
 });
