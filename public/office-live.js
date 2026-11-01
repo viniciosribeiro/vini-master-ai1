@@ -20,8 +20,10 @@ function renderOfficeLive(){
  const events=Array.isArray(state.activity)?state.activity:[];
  const jobs=Array.isArray(state.codeJobs)?state.codeJobs:[];
  const runningJob=jobs.find(j=>j.status==='working'&&realRecent(j.updated_at));
- const mission=state.missions?.find(m=>m.status==='running')||state.missions?.[0];
+ const queuedJob=jobs.find(j=>j.status==='queued');
+ const mission=state.missions?.find(m=>m.status==='running')||state.missions?.find(m=>m.status==='queued')||state.missions?.[0];
  const runningMission=mission&&mission.status==='running';
+ const queuedMission=mission&&mission.status==='queued';
  const counts=new Set();
  if(runningMission){
   for(const a of state.runs||[])if(a.status==='working')counts.add(a.agent_id);
@@ -37,7 +39,8 @@ function renderOfficeLive(){
   if(active)expression='working';
   else if(run?.status==='failed'&&realRecent(mission?.updated_at||mission?.created_at,5))expression='error';
   else if(run?.status==='done'&&realRecent(mission?.updated_at||mission?.created_at,3))expression='success';
-  else if(run?.status==='queued'&&runningMission)expression='waiting';
+  else if(run?.status==='queued'&&(queuedMission||runningMission))expression='waiting';
+  else if(id==='programador'&&queuedJob)expression='waiting';
   else{
    const event=events.find(e=>e.agent_id===id&&realRecent(e.created_at,2));
    if(event&&/deploy/i.test(event.description||'')){
@@ -47,11 +50,11 @@ function renderOfficeLive(){
   }
   station.dataset.expression=expression;
   const label=station.querySelector('.state');
-  if(label)label.textContent=active?'● Trabalhando agora':expression==='success'?'● Concluiu uma etapa':expression==='error'?'● Erro registrado':expression==='waiting'?'● Aguardando tarefa':'● Disponível';
+  if(label)label.textContent=active?'● Trabalhando agora':expression==='success'?'● Concluiu uma etapa':expression==='error'?'● Erro registrado':expression==='waiting'?'● Na fila':'● Disponível';
   let bubble=station.querySelector('.agent-popup');
   if(!bubble){bubble=document.createElement('span');bubble.className='agent-popup';station.append(bubble);}
   let latest=events.find(e=>e.agent_id===id);
-  let detail=active?(id==='programador'&&runningJob?runningJob.detail:latest?.description||'Executando tarefa registrada'):latest?.description||'Sem tarefas em execução';
+  let detail=active?(id==='programador'&&runningJob?runningJob.detail:latest?.description||'Executando tarefa registrada'):expression==='waiting'?(id==='programador'&&queuedJob?'Programação aguardando execução':mission?.title||'Missão aguardando execução'):latest?.description||'Sem tarefas em execução';
   bubble.textContent=(active?'⚡ ':'')+String(detail).slice(0,92);
   bubble.dataset.active=active?'true':'false';
   bubble.title=active?'Atividade em execução no banco D1':'Última atividade registrada, sem execução atual';
@@ -68,5 +71,5 @@ function renderOfficeLive(){
   lastEventSeen=Math.max(lastEventSeen||0,newest);
  }
  const summary=document.getElementById('office-work-summary');
- if(summary)summary.textContent=counts.size?counts.size+' agente(s) executando tarefas reais agora':'Equipe disponível · nenhum trabalho em execução neste momento';
+ if(summary)summary.textContent=counts.size?counts.size+' agente(s) executando tarefas reais agora'+(mission?.title?' · '+mission.title.slice(0,65):''):queuedMission||queuedJob?'Missão registrada e aguardando execução · os robôs iniciarão quando o Workflow estiver ativo':'Equipe disponível · nenhum trabalho em execução neste momento';
 }
