@@ -210,3 +210,18 @@ pj('profile-delete').addEventListener('click',async()=>{
  try{await api('/profile',{method:'DELETE',body:{confirm:'APAGAR PERFIL'}});pj('work-profile-text').value='';pj('work-profile-feedback').textContent='Perfil resumido apagado.';}
  catch(err){pj('work-profile-feedback').textContent=err.message;}
 });
+
+let previousIdeaCount=null;
+async function checkIdeaAlerts(){
+ if(!token||!authValidated)return;
+ try{
+  const data=await api('/ideas');
+  const count=(data.ideas||[]).filter(x=>x.status==='new').length;
+  const badge=pj('idea-count');badge.hidden=count===0;badge.textContent=count>99?'99+':String(count);
+  if(previousIdeaCount!==null&&count>previousIdeaCount){
+   notify('Sua equipe encontrou '+(count-previousIdeaCount)+' nova(s) possibilidade(s) para os projetos. Abra Projetos.');
+  }
+  previousIdeaCount=count;
+ }catch{}
+}
+setInterval(checkIdeaAlerts,180000);
