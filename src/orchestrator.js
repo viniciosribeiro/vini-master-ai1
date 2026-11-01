@@ -52,12 +52,12 @@ export function findTargetProject(message,projects){
 async function noteBlock(env,reason){
  try{await env.DB?.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('supervisor','Delegação bloqueada: '+reason.slice(0,180)).run();}catch{}
 }
-export async function delegateChatWork(env,request,provider='auto',projects=[]){
+export async function delegateChatWork(env,request,provider='auto',projects=[],contextProjectId=null){
  const intent=routeWorkIntent(request);
  if(!intent)return null;
  if(!env.MISSIONS){await noteBlock(env,'Workflow indisponível');return {reply:'Entendi sua tarefa, mas o serviço de execução de agentes não está configurado. Não vou fingir que a equipe começou a trabalhar.',delegation:{status:'blocked',reason:'Workflow indisponível'}};}
  const db=env.DB;
- const target=findTargetProject(request,projects);
+ const target=findTargetProject(request,projects)||(contextProjectId?projects.find(p=>p.id===contextProjectId&&p.status==='active'):null);
  const writeIntent=!!target&&intent.codeRequested;
  if(writeIntent){
   const authorized=await hasGitHub(db);
@@ -83,6 +83,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
  const id=crypto.randomUUID();
  const description=request.slice(0,10000);
  await db.prepare("INSERT INTO missions(id,title,description,provider,status) VALUES(?,?,?,?,'queued')").bind(id,intent.title,description,provider).run();
+ if(target)await db.prepare('INSERT INTO mission_project_links(mission_id,project_id) VALUES(?,?)').bind(id,target.id).run();
  await db.batch(intent.agents.map(agent=>db.prepare('INSERT INTO agent_runs(id,mission_id,agent_id) VALUES(?,?,?)').bind(crypto.randomUUID(),id,agent)));
  try{
   await env.MISSIONS.create({id,params:{missionId:id}});
