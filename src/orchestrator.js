@@ -13,7 +13,8 @@ export function routeWorkIntent(input){
  const text=String(input||'').trim();
  if(text.length<14||SALUTATION.test(text)||NEGATION.test(text)||PURE_INFO.test(text))return null;
  if(INQUIRY.test(text)&&!/\b(?:implemente|fa[cç]a|execute|delegue|corrija|crie)\b/iu.test(text))return null;
- if(!COMMAND.test(text)||!TASK_NOUN.test(text))return null;
+ const verbs=/\b(?:criar|fazer|executar|delegar|orquestrar|implementar|corrigir|arrumar|consertar|refazer|melhorar|desenvolver|programar|construir|atualizar|otimizar|analisar|pesquisar|planejar|revisar|testar|validar|preparar|investigar|integrar|adaptar|configurar|publicar|implantar|verificar|trabalhe|resolva|organize|adicione|gere|ajuste)\b/iu;
+ if(!(COMMAND.test(text)||verbs.test(text))||!TASK_NOUN.test(text))return null;
  const broad=/\b(?:equipe|completo|tudo|orquestre|delegue|mult[ií]plos especialistas)\b/iu.test(text)||/\b(?:crie|construa|desenvolva)\s+(?:(?:um|o|uma|a)\s+)?(?:projeto|sistema|site|app|aplicativo)\b/iu.test(text);
  const code=/\b(?:c[oó]digo|programa[cç][aã]o|api|backend|frontend|bug|erro|refator|implemente|corrija|fun[cç][aã]o|integra[cç][aã]o)\b/iu.test(text);
  const visual=/\b(?:visual|interface|tela|layout|design|ux|ui|responsiv|avatar|rob[oô]|anima[cç][aã]o|estilo)\b/iu.test(text);
@@ -30,6 +31,15 @@ export function routeWorkIntent(input){
  if(code)selected.add('qa');
  if(selected.size===1&&selected.has('programador'))selected.add('qa');
  return {agents:['supervisor',...selected],codeRequested:CODE_ACTION.test(text)&&(code||visual),title:text.replace(/\s+/g,' ').slice(0,85)};
+}
+export function resolvedFollowUp(current,priorUser,priorAssistant){
+ const short=/^\s*(?:fa[cç]a tudo|pode fazer|faz isso|pode executar|execute agora|pode iniciar|inicie agora|pode come[cç]ar|continue com isso)\s*[.!]?\s*$/iu;
+ if(!short.test(String(current||'')))return null;
+ const previous=String(priorUser||'').trim(),reply=String(priorAssistant||'');
+ if(previous.length<24||previous.length>1400||!/\\b(?:site|app|sistema|projeto|interface|tela|c[oó]digo|bug|teste|deploy|agentes|equipe|rob[oô]s|funcionalidade)\\b/iu.test(previous))return null;
+ if(/(?:abri uma \\*\\*miss[aã]o real|deleguei a implementa[cç][aã]o|miss[aã]o real|pull request rascunho)/iu.test(reply))return null;
+ const full='Execute a tarefa no sistema: '+previous;
+ return routeWorkIntent(full)?full:null;
 }
 export function findTargetProject(message,projects){
  const input=String(message||'').toLowerCase(),candidates=(projects||[]).filter(p=>p.status==='active'&&p.repo);
