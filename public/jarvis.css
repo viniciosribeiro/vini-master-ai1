@@ -496,3 +496,8 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
 .vercel-build-url{color:#a2fce9;border:1px solid #2ac89f;padding:9px;border-radius:10px;text-decoration:none;font-size:12px}
 .vini-action-button{margin-top:9px;max-width:100%;white-space:normal!important;min-height:43px!important;line-height:1.3!important;padding:9px 12px!important;border:1px solid #27bde1!important;background:#12628a!important;color:#eefcff!important;border-radius:12px!important}
 @media(max-width:780px){.vercel-console{padding:12px}.vercel-console h2{font-size:17px!important}.vercel-console label input{font-size:16px!important}.vini-action-button{width:100%}}
+
+/* Auth: remember this private phone without saving MASTER_TOKEN in JS storage. */
+#access-dialog .remember-device-option{display:flex!important;align-items:center!important;gap:10px!important;margin-top:12px!important;color:#D8F5FF!important;font-size:13px!important;line-height:1.35!important;cursor:pointer}
+#access-dialog #remember-device{appearance:auto!important;width:21px!important;min-width:21px!important;height:21px!important;min-height:21px!important;flex:0 0 21px!important;accent-color:#32C7FF!important;margin:0!important;padding:0!important;border:0!important}
+#logout-device{margin-left:6px!important;min-height:44px!important;border:1px solid #3B7794!important;color:#D3EAF7!important}
