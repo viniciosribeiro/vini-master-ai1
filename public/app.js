@@ -31,7 +31,7 @@ const UNVERIFIED_HOSTS=/(?:^|\.)((?:vercel\.app|workers\.dev|pages\.dev|netlify\
 const PUBLICATION_CLAIM=/(?:acabei de (?:fazer|subir)|fiz o deploy|publiquei|deploy (?:feito|conclu[ií]do)|(?:site|projeto|app) (?:est[aá]|ficou) (?:no ar|online|publicad[oa]))/iu;
 let verifiedDeploymentLinks=new Map(),lastVerifiedLinksRead=0;
 async function refreshVerifiedDeploymentLinks(){
- if(Date.now()-lastVerifiedLinksRead<60000||!token||!authValidated)return;
+ if(Date.now()-lastVerifiedLinksRead<60000||!authValidated)return;
  lastVerifiedLinksRead=Date.now();
  try{
   const result=await api('/projects');
@@ -220,8 +220,17 @@ async function loadChat(){
  if(!authValidated)return;
  try{
   await refreshVerifiedDeploymentLinks();
-  const data=await api('/conversation?limit=80');
-  const box=$('messages');box.replaceChildren();
+  const chosen=await window.viniThreads?.ensureSelected();
+  const box=$('messages');
+  if(!chosen){
+   box.replaceChildren(el('div','chat-thread-empty-main','Escolha um projeto e toque em “Nova conversa” para começar. Suas conversas serão organizadas por projeto.'));
+   $('intake-start-now').hidden=true;
+   window.viniThreads?.renderHeader();
+   return;
+  }
+  const data=await api('/conversation?threadId='+encodeURIComponent(chosen)+'&limit=80');
+  if(window.viniThreads?.selected()!==chosen)return;
+  box.replaceChildren();
   for(const m of data.messages||[]){
    const bubble=el('div','message '+m.role);
    if(m.role==='assistant')renderAssistant(bubble,m.content,m.provider);
@@ -229,17 +238,21 @@ async function loadChat(){
    box.append(bubble);
   }
   box.scrollTop=box.scrollHeight;
-  const intake=await api('/intake');$('intake-start-now').hidden=!intake.active;
+  const intake=await api('/intake?threadId='+encodeURIComponent(chosen));
+  $('intake-start-now').hidden=!intake.active;
+  window.viniThreads?.renderHeader();
  }catch(e){notify(e.message);}
 }
 let chatSending=false;
 async function sendChat(content,origin){
  if(!content.trim()||chatSending)return;
+ const chosen=await window.viniThreads?.ensureSelected();
+ if(!chosen){notify('Crie uma conversa e escolha o projeto antes de enviar.');window.viniThreads?.openDrawer();return;}
  chatSending=true;
  if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('thinking');
  origin.replaceChildren(el('span','reply-loading','Estou pensando na melhor resposta...'));
  try{
-  const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
+  const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider,threadId:chosen}});
   renderAssistant(origin,result.reply,result.provider);
   if(result.execution&&result.execution.kind!=='conversation')appendExecutionReceipt(origin,result.execution);
   if(result.actionRequired&&/^vercel_/.test(result.actionRequired)&&!origin.querySelector('.vini-action-button'))addVercelAction(origin,result.actionRequired==='vercel_setup'?'Conectar Vercel agora':'Escolher projeto Vercel');
@@ -281,7 +294,8 @@ async function sendChat(content,origin){
   if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
 
   await refresh();
-  if(!$('section-chat').hidden&&!result.delegation?.status?.includes('queued'))await loadChat();
+  await window.viniThreads?.reload();
+  if(!$('section-chat').hidden&&window.viniThreads?.selected()===chosen&&!result.delegation?.status?.includes('queued'))await loadChat();
  }catch(e){
   if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   origin.replaceChildren(el('p','reply-error','Não consegui responder agora: '+e.message));
@@ -293,17 +307,16 @@ async function sendChat(content,origin){
   if(label&&!window.jarvisVoiceSpeaking&&label.textContent.includes('pensando'))label.textContent='Pronto para conversar';
  }
 }
-function startNewProjectInterview(){
+async function startNewProjectInterview(){
  show('chat');
- const input=$('chat-message');input.value='Quero criar um novo projeto';
- $('chat-form').requestSubmit();
+ try{await window.viniThreads?.createNewProject()}catch(e){notify(e.message);}
 }
-$('begin-project-chat').addEventListener('click',startNewProjectInterview);
+$('begin-project-chat').addEventListener('click',()=>{void startNewProjectInterview()});
 $('intake-start-now').addEventListener('click',()=>{
  show('chat');$('chat-message').value='PODE INICIAR';$('chat-form').requestSubmit();
 });
 $('quick-chat').addEventListener('submit',e=>{e.preventDefault();const input=$('quick-message');const value=input.value.trim();if(!value)return;input.value='';sendChat(value,$('quick-response'));});
-$('chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('chat-message'),value=input.value.trim();if(!value)return;input.value='';const box=$('messages');box.append(el('div','message user',value));const target=el('div','message assistant','');box.append(target);sendChat(value,target);box.scrollTop=box.scrollHeight;});
+$('chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('chat-message'),value=input.value.trim();if(!value)return;input.value='';const box=$('messages');box.append(el('div','message user',value));const target=el('div','message assistant','');box.append(target);void sendChat(value,target);box.scrollTop=box.scrollHeight;});
 $('mission-form').addEventListener('submit',async e=>{
  e.preventDefault();const input=$('mission-description');const description=input.value.trim();if(description.length<8)return;
  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
