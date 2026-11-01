@@ -76,9 +76,9 @@ test('visible office cards, central supervisor and latest assets do not hide age
  assert.match(css,/#section-office #vc-office \.vc-office-center/);
  assert.match(css,/\.vc-agent-card/);assert.match(css,/grid-template-areas:"supervisor supervisor"/);
  assert.match(html,/vini-office-recovery\.css\?v=24/);
- assert.match(html,/vini-voice-live\.js\?v=25/);
- assert.match(sw,/vini-master-shell-v25/);
- assert.match(worker,/version:'0\.17\.6'/);
+ assert.match(html,/vini-voice-live\.js\?v=26/);
+ assert.match(sw,/vini-master-shell-v26/);
+ assert.match(worker,/version:'0\.17\.7'/);
 });
 
 test('legacy JARVIS module cannot play robotic Android voice',()=>{
