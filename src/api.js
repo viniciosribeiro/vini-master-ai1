@@ -29,7 +29,7 @@ async function recall(env,content){
  }catch{return [];}
 }
 export async function handleAPI(req,env){
- if(!authorized(req,env))return fail(env.MASTER_TOKEN?'Acesso negado.':'Configure MASTER_TOKEN nos secrets do Worker.',401);
+ if(!authorized(req,env))return fail(env.MASTER_TOKEN?.length>=24?'Acesso negado.':'Acesso ainda não configurado: adicione MASTER_TOKEN de pelo menos 24 caracteres nos Secrets do Worker Cloudflare.',401);
  if(!env.DB)return fail('Binding do banco DB ausente.',503);
  const url=new URL(req.url),path=url.pathname,method=req.method;
  try{
