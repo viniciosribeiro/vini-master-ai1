@@ -68,7 +68,8 @@ function display(){
  renderFilters($('vini-live-modal-filters'),popupSelected,x=>{popupSelected=x;display();});
  renderTo($('vini-live-modal-events'),popupSelected,180);
  const latest=events[events.length-1];
- if(latest&&typeof window!=='undefined'){window.jarvisLatestEvents=[...events].reverse();}
+ if(latest&&typeof window!=='undefined')window.jarvisLatestEvents=[...events].reverse();
+ if(typeof renderOfficeLive==='function'&&typeof state!=='undefined'&&Array.isArray(state.agents))renderOfficeLive();
 }
 function open(agent='all'){
  popupSelected=AGENTS[agent]?agent:'all';display();
@@ -99,10 +100,6 @@ async function poll(force=false){
   if(events.length>280)events=events.slice(-280);
   display();
   // Store only the latest real events for the office bubbles; no generated/fictional activity.
-  if(batch.length&&!initial){
-   const event=batch[batch.length-1];
-   if(typeof officeNotice==='function'&&batch.length<8&&activeWork())officeNotice(event);
-  }
   initial=false;
   if(data.hasMore&&cursor<Number(data.latestId))lastRead=0;
  }catch(e){lastFailure=String(e.message||e).slice(0,150);boxStatus();}
