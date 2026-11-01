@@ -20,7 +20,7 @@ export async function listThreads(db,{search='',status='active',projectId=''}={}
  if(!['active','archived','trashed','all'].includes(status))throw Error('Filtro inválido.');
  const term=String(search||'').trim().slice(0,100),proj=String(projectId||'').trim(),q='%'+term+'%';
  const sql='SELECT t.id,t.project_id,t.title,t.status,t.is_draft,t.created_at,t.updated_at,p.name AS project_name,'
- +' (SELECT m.content FROM messages m WHERE m.thread_id=t.id ORDER BY m.id DESC LIMIT 1) AS preview,'
+ +' (SELECT SUBSTR(m.content,1,120) FROM messages m WHERE m.thread_id=t.id ORDER BY m.id DESC LIMIT 1) AS preview,'
  +' (SELECT COUNT(*) FROM messages m WHERE m.thread_id=t.id) AS message_count'
  +' FROM chat_threads t LEFT JOIN projects p ON p.id=t.project_id'
  +' WHERE (? = \'all\' OR t.status=?) AND (?=\'\' OR t.project_id=?)'
