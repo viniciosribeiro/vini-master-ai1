@@ -163,11 +163,27 @@ function renderMemories(){
   });div.append(text,btn);box.append(div);
  }
 }
+function renderDelegationStatus(){
+ const banner=$('jarvis-task-banner'),text=$('jarvis-task-text');
+ if(!banner||!text)return;
+ const m=state.missions?.find(x=>x.status==='running')||state.missions?.find(x=>x.status==='queued');
+ const job=state.codeJobs?.find(x=>x.status==='working')||state.codeJobs?.find(x=>x.status==='queued');
+ banner.hidden=!m&&!job;
+ if(m){
+  const runs=(state.runs||[]).filter(x=>x.mission_id===m.id);
+  const active=runs.filter(x=>x.status==='working').length,done=runs.filter(x=>x.status==='done').length;
+  text.textContent=m.status==='queued'?'Missão na fila: '+m.title:'Equipe trabalhando em "'+m.title+'": '+active+' ativo(s), '+done+' concluído(s)';
+ }else if(job){
+  text.textContent=job.status==='queued'?'Programação na fila: '+job.request.slice(0,75):'Programador trabalhando: '+job.detail.slice(0,100);
+ }
+}
+$('jarvis-task-open')?.addEventListener('click',()=>show('office'));
 async function refresh(){
  if(!token||!authValidated)return;
  try{
   state=await api('/state');
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
+  renderDelegationStatus();
   if(typeof renderOfficeLive==='function')renderOfficeLive();
   if(typeof window.renderJarvisMonitor==='function')window.renderJarvisMonitor();
   if(missionSelection&&state.missions.some(m=>m.id===missionSelection&&['queued','running'].includes(m.status)))loadMission(missionSelection);
