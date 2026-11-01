@@ -1,9 +1,26 @@
 import {callAI} from './ai.js';
-import {parseIdeas,saveIdeas,auditProject} from './project-manager.js';
+import {parseIdeas,saveIdeas,auditProject,createProject,listProjects,projectStatus} from './project-manager.js';
+import {readGitHub,listGitHubRepos} from './github-engine.js';
 import {ensureSchema} from './bootstrap.js';
+async function syncNewRepos(env){
+ try{
+  const key=await readGitHub(env);if(!key)return {added:0};
+  const remote=await listGitHubRepos(key);
+  const existing=new Set((await listProjects(env.DB)).map(x=>x.repo.toLowerCase()));
+  let added=0;
+  for(const repo of remote){
+   if(existing.has(repo.repo.toLowerCase()))continue;
+   const project=await createProject(env.DB,{name:repo.name,description:repo.description||'Importado automaticamente do GitHub.',platform:'other',repo:repo.repo});
+   if(repo.archived)await projectStatus(env.DB,project.id,'archived','');
+   existing.add(repo.repo.toLowerCase());added++;if(added>=30)break;
+  }
+  return {added};
+ }catch{return {added:0,reason:'GitHub indisponível para sincronização'};}
+}
 export async function proactiveReview(env){
  if(!env.DB||!env.AI?.run)return {status:'skipped',reason:'missing bindings'};
  await ensureSchema(env.DB);
+ await syncNewRepos(env);
  const project=await env.DB.prepare("SELECT p.* FROM projects p WHERE p.status='active' AND NOT EXISTS(SELECT 1 FROM project_events e WHERE e.project_id=p.id AND e.action='auto-review' AND e.created_at>=datetime('now','-7 days')) ORDER BY p.updated_at ASC LIMIT 1").first();
  if(!project)return {status:'skipped',reason:'no project due'};
  const [memories,messages]=await Promise.all([
