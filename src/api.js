@@ -1,4 +1,5 @@
-import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms} from './ai.js';
+import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
+import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider} from './ai.js';
 import {ensureSchema} from './bootstrap.js';
 const respond=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const fail=(message,status=400)=>respond({error:message},status);
@@ -42,7 +43,27 @@ export async function handleAPI(req,env){
     env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first(),
     env.DB.prepare('SELECT (SELECT COUNT(*) FROM messages) messages,(SELECT COUNT(*) FROM missions) missions,(SELECT COUNT(*) FROM memories) memories').first()
    ]);
-   return respond({missions:a.results||[],runs:b.results||[],activity:c.results||[],memories:d.results||[],provider:e?.value||'auto',counts:f,hasNvidia:!!env.NVIDIA_API_KEY,agents:AGENTS});
+   return respond({missions:a.results||[],runs:b.results||[],activity:c.results||[],memories:d.results||[],provider:e?.value||'auto',counts:f,hasNvidia:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),hasCloudflare:!!env.AI?.run,agents:AGENTS});
+  }
+  if(path==='/api/providers'&&method==='GET')return respond({cloudflare:{configured:!!env.AI?.run,model:env.CF_AI_MODEL||'@cf/zai-org/glm-4.7-flash'},nvidia:{configured:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),model:env.NVIDIA_MODEL||'nvidia/nemotron-3-ultra-550b-a55b'}});
+  if(path==='/api/providers/test'&&method==='POST'){
+   const data=await parse(req);
+   if(!['cloudflare','nvidia'].includes(data.provider))return fail('Escolha Cloudflare ou NVIDIA.');
+   try{return respond(await verifyProvider(env,data.provider));}
+   catch(e){return fail(String(e.message||e).slice(0,300),503);}
+  }
+  if(path==='/api/integrations/nvidia'&&method==='POST'){
+   const data=await parse(req),key=String(data.key||'').trim();
+   if(key.length<20||key.length>512||/[\\s]/.test(key))return fail('A chave NVIDIA deve ter entre 20 e 512 caracteres e não pode conter espaços.');
+   try{
+    const test=await verifyProvider({...env,DB:null,NVIDIA_API_KEY:key},'nvidia',key);
+    await storeNvidia(env,key);
+    return respond({connected:true,provider:'nvidia',model:test.model,message:'Chave validada com chamada real e salva de forma cifrada.'});
+   }catch(e){return fail('Não foi possível validar a NVIDIA: '+String(e.message||e).slice(0,240),503);}
+  }
+  if(path==='/api/integrations/nvidia'&&method==='DELETE'){
+   await removeNvidia(env);
+   return respond({connected:!!env.NVIDIA_API_KEY,externalSecret:!!env.NVIDIA_API_KEY});
   }
   if(path==='/api/conversation'&&method==='GET'){
    const limit=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||60));
@@ -108,6 +129,7 @@ export async function handleAPI(req,env){
   }
   if(path==='/api/settings'&&method==='POST'){
    const data=await parse(req);if(!['auto','cloudflare','nvidia'].includes(data.provider))return fail('Provedor inválido.');
+   if(data.provider==='nvidia'&&!env.NVIDIA_API_KEY&&!(await hasStoredNvidia(env.DB)))return fail('Conecte sua chave NVIDIA em Configurações antes de selecionar este modo.',409);
    await env.DB.prepare("INSERT INTO settings(key,value) VALUES('provider',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(data.provider).run();
    return respond({provider:data.provider});
   }
