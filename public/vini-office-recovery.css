@@ -1,0 +1,135 @@
+/* VINI OFFICE RECOVERY R4 — restore actual clickable agents, natural spacing, mobile-first.
+   No fictional activity counts: active states continue to come from D1. */
+#section-office #vc-office {
+  background:radial-gradient(ellipse at 50% 18%,#0b407177,transparent 40%),
+    radial-gradient(ellipse at 88% 65%,#4b1f7447,transparent 41%),#041226!important;
+  border:1px solid #217bad!important;border-radius:22px!important;
+  padding:clamp(14px,2.5vw,27px)!important;
+  box-shadow:inset 0 0 35px #167fc61b,0 12px 45px #010915b8!important;
+  overflow:hidden;isolation:isolate;
+}
+#section-office #vc-office .vc-office-top{
+  display:flex!important;align-items:flex-start!important;justify-content:space-between!important;
+  gap:10px!important;padding:0 0 14px!important;z-index:2;
+}
+#section-office #vc-office .vc-office-top h2{
+  font-size:clamp(25px,3vw,40px)!important;font-weight:850!important;
+  color:#f3faff!important;line-height:1.13!important;
+}
+#section-office #vc-office .vc-office-top p{
+  color:#acd3e9!important;max-width:500px;font-size:clamp(12px,1.2vw,14px);
+}
+#section-office #vc-office .vc-office-grid {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(180px,.95fr) minmax(0,1fr)!important;
+  gap:clamp(8px,1.2vw,16px)!important;min-width:0!important;
+  margin:12px 0 19px!important;align-items:stretch!important;
+  position:relative;z-index:2;
+}
+#section-office #vc-office .vc-agent-col{
+  display:flex!important;flex-direction:column!important;gap:11px!important;min-width:0!important;
+}
+#section-office #vc-office .vc-agent-card{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  text-align:left!important;gap:12px!important;padding:12px!important;
+  min-height:94px!important;border:1px solid #2b719f!important;
+  border-radius:17px!important;min-width:0!important;
+  background:linear-gradient(112deg,#0a2d4c,#061b3a)!important;
+  box-shadow:inset 0 1px 0 #bbf7ff16,0 6px 20px #0005!important;
+  overflow:hidden;transition:transform .15s,border-color .15s,box-shadow .15s;
+}
+#section-office #vc-office .vc-agent-card:hover,
+#section-office #vc-office .vc-agent-card:focus-visible{
+  transform:translateY(-2px);border-color:#51dfff!important;
+  box-shadow:0 0 20px #19b9f54a!important;outline-offset:3px;
+}
+#section-office #vc-office .vc-agent-card[data-active="true"] {
+  border-color:#21f4b7!important;box-shadow:0 0 18px #14e8b53a!important;
+}
+#section-office #vc-office .vc-agent-face{
+  flex:none!important;width:61px!important;height:61px!important;
+  border-radius:18px!important;background-color:#071933!important;
+  background-image:url('/ref-robot.webp')!important;
+  background-size:cover!important;background-position:center!important;
+  box-shadow:0 0 15px color-mix(in srgb,var(--agent-color,#31dfff),transparent 65%)!important;
+  border:1px solid var(--agent-color,#37dfff)!important;
+}
+#section-office #vc-office .vc-agent-card[data-agent="designer"] .vc-agent-face{filter:hue-rotate(82deg)}
+#section-office #vc-office .vc-agent-card[data-agent="qa"] .vc-agent-face{filter:hue-rotate(285deg)}
+#section-office #vc-office .vc-agent-card[data-agent="map"] .vc-agent-face,
+#section-office #vc-office .vc-agent-card[data-agent="pesquisa"] .vc-agent-face{filter:hue-rotate(150deg)}
+#section-office #vc-office .vc-agent-card[data-agent="infra"] .vc-agent-face{filter:hue-rotate(225deg)}
+#section-office #vc-office .vc-agent-card strong{display:block!important;font-size:clamp(14px,1.25vw,18px)!important;color:#f3faff!important;white-space:normal!important;overflow-wrap:anywhere}
+#section-office #vc-office .vc-agent-card small{display:block!important;font-size:clamp(11px,1vw,13px)!important;color:#a7d3e9!important;white-space:normal!important;line-height:1.4}
+#section-office #vc-office .vc-office-center{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:8px!important;padding:22px 9px!important;
+  min-width:0!important;min-height:325px!important;position:relative;
+  background:radial-gradient(ellipse at 50% 52%,#123e7a7c,transparent 65%);
+  border-radius:24px;border:1px solid #1f619a80;
+}
+#section-office #vc-office .vc-office-center::before{
+  content:'';position:absolute;inset:8% 12%;border-radius:50%;
+  border:1px solid #2cd5fc40;box-shadow:inset 0 0 30px #207ee81c,0 0 30px #219cff25;
+  pointer-events:none;animation:vini-core-rotate 14s linear infinite;
+  background:repeating-conic-gradient(from 0deg,#45dcff08 0 8deg,transparent 8deg 22deg);
+}
+#section-office #vc-office .vc-office-center .vc-vini-robot{
+  position:relative;z-index:1;filter:drop-shadow(0 0 26px #4bdaff7c);
+  transform:scale(1.15);margin:4px 0 12px;
+}
+#section-office #vc-office .vc-office-center .vc-orbit{position:absolute!important;opacity:.35!important;pointer-events:none!important}
+#section-office #vc-office .vc-office-center >strong{
+  z-index:2;color:#fff;font-size:18px!important;letter-spacing:.03em;text-align:center;
+}
+#section-office #vc-office .vc-office-center >small{
+  z-index:2;color:#b1daea!important;text-align:center;font-size:12px!important;line-height:1.45;
+}
+#section-office #vc-office .vc-office-logo{opacity:.3}
+#section-office #vc-office .vc-flowbar{position:relative;z-index:2}
+#section-office .vr-scene-details{margin-top:14px!important;box-shadow:none!important}
+#section-office .vr-scene-details summary{color:#a7d2e4}
+#section-office .vr-scene-details .vr-office-scene{min-height:0!important;max-height:430px!important}
+#section-office .vr-scene-details .vr-office-scene > img{
+  /* Current illustration is only 320x188. Do not present it as a full-resolution scene. */
+  object-fit:contain!important;background:#04152b;
+  filter:none!important;
+}
+#section-office .vr-scene-details .vr-office-floating{background:#06182fee}
+#section-office .vini-live-panel{min-width:0!important}
+#section-office .vini-live-events{overflow-y:auto;overflow-x:hidden}
+@keyframes vini-core-rotate{to{transform:rotate(360deg)}}
+@media(max-width:1120px){
+ #section-office #vc-office .vc-office-grid{grid-template-columns:minmax(0,1fr) minmax(145px,.8fr) minmax(0,1fr)!important;gap:8px!important}
+ #section-office #vc-office .vc-agent-card{gap:7px!important;padding:9px!important}
+ #section-office #vc-office .vc-agent-face{width:48px!important;height:48px!important}
+}
+@media(max-width:780px){
+ #section-office #vc-office .vc-office-top{flex-wrap:wrap!important}
+ #section-office #vc-office .vc-office-grid{
+   display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+   grid-template-areas:"supervisor supervisor" "agentsleft agentsright"!important;
+   gap:10px!important;align-items:start!important;
+ }
+ #section-office #vc-office .vc-office-center{grid-area:supervisor!important;order:0!important;min-height:188px!important;padding:16px 12px!important}
+ #section-office #vc-office #vc-office-left{grid-area:agentsleft!important;order:1!important}
+ #section-office #vc-office #vc-office-right{grid-area:agentsright!important;order:2!important}
+ #section-office #vc-office .vc-agent-col{display:flex!important;flex-direction:column!important;gap:8px!important}
+ #section-office #vc-office .vc-agent-card{display:flex!important;flex-direction:column!important;text-align:center!important;min-height:125px!important;padding:11px 7px!important;gap:6px!important}
+ #section-office #vc-office .vc-agent-face{width:54px!important;height:54px!important}
+ #section-office #vc-office .vc-agent-card strong{font-size:13px!important}
+ #section-office #vc-office .vc-agent-card small{font-size:10px!important}
+ #section-office #vc-office .vc-office-center .vc-vini-robot{transform:scale(.95);margin:0}
+ #section-office #vc-office .vc-office-center>strong{font-size:17px!important}
+ #section-office #vc-office .vc-flowbar{overflow-x:auto;scrollbar-width:thin}
+ #section-office .vr-scene-details .vr-office-floating{width:44%;top:8px}
+}
+@media(max-width:370px){
+ #section-office #vc-office{padding:10px!important}
+ #section-office #vc-office .vc-office-grid{gap:6px!important}
+ #section-office #vc-office .vc-agent-card{min-height:119px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #section-office #vc-office .vc-office-center::before{animation:none!important}
+ #section-office #vc-office .vc-agent-card{transition:none!important}
+}
