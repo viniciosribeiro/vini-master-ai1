@@ -1,4 +1,4 @@
-# VINI MASTER AI — JARVIS Robot Edition (0.5)
+# VINI MASTER AI — JARVIS Robot Edition 0.6.1
 
 Interface chat-first, seis robôs minimalistas não humanos em um escritório responsivo, dados reais de tarefas, voz progressiva por APIs do navegador e PWA Android. Publicação via Cloudflare Workers Builds no repositório `viniciosribeiro/vini-master-ai1`.
 
@@ -94,3 +94,14 @@ O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service wo
 - Voz opcional via reconhecimento Web Speech e síntese de voz do navegador em pt-BR, onde houver suporte e permissão; não é conversa de voz streaming nem garantia de compatibilidade em qualquer navegador. Mensagens só são enviadas ao servidor quando o reconhecimento termina; frases faladas podem usar serviços do próprio navegador.
 - O chat reduz o holograma quando o histórico cresce. Mantidos autenticação, GitHub, D1, Workflows, NVIDIA, Cloudflare AI, catálogo de projetos e PWA.
 - Testar autenticado: conversa, voz no Chrome Android, criação de missão e atualização real de estado ainda requerem sessão do usuário e permissões de microfone.
+
+## Correções 0.6.1 — status real e robôs expressivos
+- Chat não executa deploy; o prompt proíbe afirmar publicação e o servidor neutraliza falsas afirmações e URLs de plataforma que não constam como verificadas.
+- HTML cru de links antigos fica legível, e o cliente sinaliza links antigos não confirmados. Links realmente verificados podem aparecer como cards clicáveis.
+- Projetos possuem status de produção/prévia distinto do endereço: `online`, `unavailable`, `unverified`. No cadastro só são links online quando verificados por GET HTTP 2xx, sem seguir redirecionamentos; erros 404 e 401 não passam.
+- Verificação automática restrita aos hosts HTTPS conhecidos de plataformas (workers.dev, pages.dev, vercel.app etc.). Domínios personalizados não são sondados automaticamente sem autorização/validação de domínio; permanecem não verificados. Um HTTP 2xx é confirmação da resposta HTTP naquela data, não garantia de funcionalidade completa do site.
+- Histórico de atividade da Infra registra mudanças reais na disponibilidade. O escritório mostra movimentos ambientados sem alegar trabalho, e expressões específicas para missão ativa, concluída, falha ou em espera.
+- Robôs simples não humanos: piscam, mexem antenas, braços e boca; VINI reage quando escuta/processa/fala (mediante suporte de voz no navegador). CSS respeita preferência de acessibilidade por redução de movimento.
+- Retirado o `microphone=()` da política de permissões que bloqueava a autorização do usuário. Chrome Android pode solicitar permissão para o microfone; reconhecimento de voz depende do navegador e do serviço configurado no próprio sistema, não de um backend de streaming dedicado.
+- PWA possui manifest standalone, ícones, cache somente dos assets públicos, aviso offline e botão de instalação com maior contraste. Backend da IA, memória e GitHub continuam exigindo internet.
+- Testes adicionados para o bloqueio de links falsos. Builds são publicados pelo GitHub → Cloudflare. Um teste autenticado de ponta a ponta, a usabilidade real em Chrome Android e um deploy externo real ainda precisam ser verificados na sessão da aplicação.
