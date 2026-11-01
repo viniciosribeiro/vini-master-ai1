@@ -1,8 +1,8 @@
 {
   "id": "/",
   "name": "VINI MASTER AI — JARVIS Robot Edition",
-  "short_name": "VINI MASTER",
-  "description": "Chat inteligente e escritório de robôs agentes para projetos, memória e deploys.",
+  "short_name": "VINI JARVIS",
+  "description": "Chat por texto e voz e escritório vivo dos agentes VINI, com projetos, deploys verificados e memória.",
   "start_url": "/?source=install",
   "scope": "/",
   "display": "standalone",
