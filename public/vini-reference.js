@@ -32,11 +32,23 @@
   }
   return outer;
  }
+ function decoratePortfolio(){
+  const grid=$('projects-list');if(!grid)return;
+  const apply=()=>{for(const card of grid.querySelectorAll('.portfolio-card')){
+    const name=(card.querySelector('strong')?.textContent||'').toLowerCase();
+    card.dataset.vrKind=/marimar|pousada|hospedagem|hotel|stay/.test(name)?'stay':
+      /food|mesa|restaurante|quiosque|rancho/.test(name)?'food':
+      /hotspot|starlink|wi-?fi|encantadas/.test(name)?'wifi':
+      /sereia|turismo|passeio|tour|ilha/.test(name)?'tour':'general';
+  }};
+  apply();new MutationObserver(apply).observe(grid,{childList:true});
+ }
  function mount(){
   if(mounted)return;
   const office=$('vc-office'),grid=$('vc-office')?.querySelector('.vc-office-grid');
   if(!office||!grid)return;
   mounted=true;document.body.classList.add('vini-reference-r2');
+  decoratePortfolio();
   const scene=E('div','vr-office-scene');
   scene.setAttribute('aria-label','Ilustração do escritório virtual enviada como referência de design');
   scene.append(makeArt('vr-office-image','/ref-office.webp',''));

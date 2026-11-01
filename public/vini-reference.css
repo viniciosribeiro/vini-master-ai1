@@ -165,3 +165,10 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 .vr-office-scene[data-live=true]{border-color:#32f1c4;box-shadow:0 0 23px #16cfa543}
 .vr-office-scene[data-live=true] .vr-office-floating.left{border-color:#39eac3}
 @media(max-width:780px){#section-office>.workspace>.activity{margin:10px 0 0!important}}
+
+/* True project images from the user's portfolio reference, not generic placeholders. */
+#section-projects #projects-list .portfolio-card[data-vr-kind="tour"]:before{background-image:url('/ref-thumb-tour.webp')!important}
+#section-projects #projects-list .portfolio-card[data-vr-kind="stay"]:before{background-image:url('/ref-thumb-stay.webp')!important}
+#section-projects #projects-list .portfolio-card[data-vr-kind="food"]:before{background-image:url('/ref-thumb-food.webp')!important}
+#section-projects #projects-list .portfolio-card[data-vr-kind="wifi"]:before{background-image:url('/ref-thumb-wifi.webp')!important}
+#section-projects #projects-list .portfolio-card[data-vr-kind]::before{background-position:center!important;background-size:cover!important;content:''!important}
