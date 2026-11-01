@@ -21,9 +21,11 @@ function fillSelect(id,selected='',draftOption=false){
 function renderHeader(){
  const t=current();
  $('chat-current-title').textContent=t?t.title:'Nenhuma conversa selecionada';
- $('chat-current-project').textContent=t?(t.project_name||'Histórico não vinculado — escolha um projeto'):'Crie uma conversa e selecione o projeto';
+ const project=t?.project_id?projects.find(p=>p.id===t.project_id):null;
+ const locked=!!t?.project_id&&(!project||project.status!=='active');
+ $('chat-current-project').textContent=t?(locked?'Projeto arquivado/excluído — restaure ou mova a conversa':t.project_name||'Histórico não vinculado — escolha um projeto'):'Crie uma conversa e selecione o projeto';
  $('chat-thread-menu').disabled=!t;
- $('chat-form')?.querySelectorAll('button,input').forEach(el=>{if(el.id!=='jarvis-chat-mic')el.disabled=!t||t.status!=='active'||(!t.project_id&&!t.is_draft);});
+ $('chat-form')?.querySelectorAll('button,input').forEach(el=>{if(el.id!=='jarvis-chat-mic')el.disabled=!t||t.status!=='active'||locked||(!t.project_id&&!t.is_draft);});
  const noThread=!t;
  const input=$('chat-message');if(input)input.placeholder=noThread?'Crie uma conversa para começar':t.is_draft?'Descreva o novo projeto…':'Converse sobre '+(t.project_name||'seu projeto')+'…';
 }
