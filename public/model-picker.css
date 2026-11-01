@@ -1,0 +1,18 @@
+/* Workers AI model chooser - light visual grouping in dark VINI theme, responsive phone controls. */
+.vini-model-picker{margin:12px 0 17px;border:1px solid #2b7295;background:linear-gradient(145deg,#09243e,#0d2941);border-radius:16px;padding:14px;display:grid;gap:10px;min-width:0}
+.vini-model-picker-heading strong{display:block;color:#e5faff;font-size:16px;font-weight:800}
+.vini-model-picker-heading p{color:#a3cadd!important;font-size:12px!important;line-height:1.5;margin:4px 0!important}
+.vini-model-picker>label,.vini-model-nvidia>label{color:#d2ecf9;font-size:12px;font-weight:700}
+.vini-model-picker select,.vini-model-picker input[type=text]{width:100%!important;max-width:100%!important;min-width:0!important;min-height:46px!important;border:1px solid #397b9f!important;border-radius:11px!important;background:#061c30!important;color:#effaff!important;font-size:13px!important;padding:10px!important;outline-offset:2px}
+.vini-model-picker input[type=text]{font-family:ui-monospace,Consolas,monospace;font-size:12px!important;overflow-wrap:anywhere}
+.vini-model-picker button{min-height:44px;border-radius:11px;font-size:13px;padding:10px 12px}
+.vini-model-pricing{font-size:11px;color:#a7d2e5;line-height:1.55;background:#12334e;padding:9px 10px;border-radius:9px}
+.vini-model-paid-ack{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#ffdea5!important;line-height:1.4}
+.vini-model-paid-ack[hidden]{display:none!important}
+.vini-model-paid-ack input{width:22px!important;min-width:22px!important;height:22px!important;accent-color:#49d6f8}
+.vini-model-feedback{font-size:11px!important;color:#90dbef!important;overflow-wrap:anywhere;margin:0!important;line-height:1.5!important}
+.vini-model-nvidia{border-top:1px solid #275774;margin-top:5px;padding-top:12px;display:grid;gap:9px}
+.vini-model-explanation{font-size:11px!important;line-height:1.55!important;color:#95c0d4!important;margin:0!important}
+.vini-model-picker>a{font-size:12px;color:#7ae5ff;text-decoration:underline}
+#model-quick-open{min-height:36px;padding:7px 11px;border-radius:19px;font-size:11px;border:1px solid #388eb2;color:#c4efff;background:#10405e}
+@media(max-width:780px){.vini-model-picker{padding:12px;border-radius:14px}.vini-model-picker select,.vini-model-picker input[type=text]{font-size:16px!important}.vini-model-picker button{width:100%}}
