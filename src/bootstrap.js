@@ -10,10 +10,11 @@ const SQL = [
 "CREATE INDEX IF NOT EXISTS idx_agent_runs_mission ON agent_runs(mission_id)",
 "CREATE TABLE IF NOT EXISTS activity (id INTEGER PRIMARY KEY AUTOINCREMENT,agent_id TEXT NOT NULL,mission_id TEXT,description TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)",
 "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY,value TEXT NOT NULL)",
+"CREATE TABLE IF NOT EXISTS provider_credentials (name TEXT PRIMARY KEY,salt TEXT NOT NULL,iv TEXT NOT NULL,ciphertext TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)",
 "INSERT OR IGNORE INTO settings(key,value) VALUES('provider','auto')"
 ];
 export async function ensureSchema(db){
- try {await db.prepare('SELECT key FROM settings LIMIT 1').first();return;}
+ try {await db.prepare('SELECT key FROM settings LIMIT 1').first(); await db.prepare("CREATE TABLE IF NOT EXISTS provider_credentials (name TEXT PRIMARY KEY,salt TEXT NOT NULL,iv TEXT NOT NULL,ciphertext TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run(); return;}
  catch(err){if(!/no such table|does not exist/i.test(String(err.message||err)))throw err;}
  for(const statement of SQL)await db.prepare(statement).run();
 }
