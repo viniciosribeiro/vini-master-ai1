@@ -443,3 +443,31 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
 /* Agent detail drawer action: obvious path from each robot to its real logs. */
 .jarvis-sheet-log{width:100%;min-height:46px;margin-top:10px;padding:10px 13px;border:1px solid #38d1ef;border-radius:12px;background:#123f61;color:#d8f8ff;font-weight:760;font-size:13px}
 .jarvis-sheet-log:hover{background:#14577d}
+
+/* Delivery evidence: never mistake a text analysis for a published app. */
+.vini-proof-section{margin:13px 0 18px!important;padding:16px!important;background:linear-gradient(145deg,#0d263f,#08192b)!important}
+.vini-proof-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.vini-proof-title h2{font-size:18px!important;color:#eefaff!important;margin:0 0 5px}
+.vini-proof-title p{color:#a6c4d7!important;font-size:12px!important;margin:0 0 10px!important}
+#vini-proof-refresh{min-height:40px;font-size:12px;padding:8px 12px;border-radius:12px}
+.vini-proof-counts{color:#8ed8ee;font-size:12px;padding:5px 0 13px}
+.vini-proof-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,265px),1fr));gap:10px;max-height:520px;overflow-y:auto}
+.vini-proof-card{background:#071b30;border:1px solid #225576;border-left:3px solid #6e91a9;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.vini-proof-card[data-proof=verified]{border-left-color:#42ddb0}
+.vini-proof-card[data-proof=analysis]{border-left-color:#e0c273}
+.vini-proof-top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.vini-proof-top strong{font-size:12px;color:#dff6ff}
+.vini-proof-status{font-size:10px;border-radius:7px;border:1px solid #2e7091;color:#b1e5f4;padding:4px 6px}
+.vini-proof-task,.vini-proof-explanation{margin:0!important;line-height:1.45;font-size:12px!important;overflow-wrap:anywhere}
+.vini-proof-task{color:#f1fbff!important;font-weight:650}
+.vini-proof-explanation{color:#9bbcd0!important}
+.vini-proof-id{font-size:10px;color:#8bb1c5;overflow-wrap:anywhere}
+.vini-proof-pr{display:block;padding:9px 12px;border-radius:11px;color:#b9fff0;background:#104a44;border:1px solid #2cba94;text-decoration:none;font-size:12px;font-weight:750}
+.vini-proof-empty{color:#a9c8d6;font-size:13px}
+.vini-chat-actions{flex-wrap:wrap;gap:7px}
+#vini-chat-proofs{border:1px solid #268bac!important;color:#c0eeff!important;background:#123754!important;font-size:11px;padding:7px 10px;min-height:36px;border-radius:18px}
+.chat-execution-receipt{margin-top:8px;padding:8px 11px;border:1px solid #306f91;background:#102c48;color:#cdefff;border-radius:11px;font-size:11px;line-height:1.45}
+.chat-execution-receipt[data-kind=conversation]{color:#a6c3d6;border-color:#234960}
+.chat-execution-receipt[data-kind=blocked]{border-color:#cf8864;background:#3a292c;color:#ffd5bb}
+.chat-execution-receipt[data-kind=code_job],.chat-execution-receipt[data-kind=mission]{border-color:#3cc9ba;color:#baffef}
+@media(max-width:780px){.vini-proof-section{padding:12px!important}.vini-proof-list{grid-template-columns:1fr;max-height:400px}.vini-proof-card{padding:11px}}
