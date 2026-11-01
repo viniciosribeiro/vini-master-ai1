@@ -325,7 +325,7 @@ $('chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('c
 $('mission-form').addEventListener('submit',async e=>{
  e.preventDefault();const input=$('mission-description');const description=input.value.trim();if(description.length<8)return;
  const btn=e.target.querySelector('button[type=submit]');btn.disabled=true;
- try{const result=await api('/missions',{method:'POST',body:{description,provider:state.provider}});input.value='';notify('Missão iniciada: '+result.id);await refresh();await loadMission(result.id);}catch(err){notify(err.message)}finally{btn.disabled=false;}
+ try{const result=await api('/missions',{method:'POST',body:{description,provider:state.provider,projectId:document.getElementById('vc-mission-project')?.value||null}});input.value='';notify('Missão iniciada: '+result.id);await refresh();await loadMission(result.id);}catch(err){notify(err.message)}finally{btn.disabled=false;}
 });
 $('memory-form').addEventListener('submit',async e=>{e.preventDefault();const input=$('memory-text');try{await api('/memory',{method:'POST',body:{content:input.value}});input.value='';await refresh();notify('Memória salva no banco D1.');}catch(err){notify(err.message)}});
 $('search-form').addEventListener('submit',async e=>{e.preventDefault();const box=$('search-results');box.replaceChildren();try{const data=await api('/search?q='+encodeURIComponent($('search-query').value));if(!data.results?.length)box.append(el('p','empty','Nenhum trecho encontrado.'));for(const m of data.results||[])box.append(el('div','search-card',m.content));}catch(err){notify(err.message);}});
@@ -433,7 +433,7 @@ initializeAccess();
 // Adaptive polling: lively during actual work; economical when idle and offline.
 let refreshHeartbeat=0;
 setInterval(()=>{
- if(!token||!authValidated||document.hidden||navigator.onLine===false)return;
+ if(!authValidated||document.hidden||navigator.onLine===false)return; // HttpOnly cookie sessions do not keep a JS token.
  refreshHeartbeat++;
  const active=(state.missions||[]).some(m=>m.status==='running'||m.status==='queued')||(state.codeJobs||[]).some(j=>j.status==='working'||j.status==='queued');
  if(active||refreshHeartbeat%5===0)refresh();
