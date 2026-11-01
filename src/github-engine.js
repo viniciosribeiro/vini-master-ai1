@@ -21,7 +21,10 @@ export async function createDraftPR(token,repo,id,request,code){const info=await
 }
 export async function codeMission(env,jobId,step){
  const job=await env.DB.prepare('SELECT j.*,p.repo,p.name FROM code_jobs j JOIN projects p ON p.id=j.project_id WHERE j.id=?').bind(jobId).first();if(!job)return {status:'failed',reason:'Job inexistente'};
- const update=async(status,detail,result='')=>env.DB.prepare('UPDATE code_jobs SET status=?,detail=?,result=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(status,detail,typeof result==='string'?result:JSON.stringify(result),jobId).run();
+ const update=async(status,detail,result='')=>{
+  await env.DB.prepare('UPDATE code_jobs SET status=?,detail=?,result=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(status,detail,typeof result==='string'?result:JSON.stringify(result),jobId).run();
+  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind('programador',null,(status==='working'?'Trabalhando: ':status==='done'?'Concluído: ':'Falha: ')+detail.slice(0,250)).run();
+ };
  try{
   await update('working','Conferindo repositório GitHub');
   const info=await step.do('Verificar GitHub',async()=>{const key=await readGitHub(env);if(!key)throw Error('GitHub não conectado.');return verifyGitHub(key,job.repo);});
