@@ -15,7 +15,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "vini-master-memory","database_id": "ae4b1148-fd27-4fe4-a718-30ef8ae71ca6"
+      "database_name": "vini-master-memory",
+      "database_id": "ae4b1148-fd27-4fe4-a718-30ef8ae71ca6"
     }
   ],
   "workflows": [
@@ -29,5 +30,10 @@
     "CF_AI_MODEL": "@cf/zai-org/glm-4.7-flash",
     "NVIDIA_MODEL": "nvidia/nemotron-3-ultra-550b-a55b",
     "MAX_DAILY_MISSIONS": "3"
+  },
+  "triggers": {
+    "crons": [
+      "0 12 * * *"
+    ]
   }
 }
