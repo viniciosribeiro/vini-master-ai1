@@ -2,8 +2,8 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition 0.12.0</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=29"><link rel="stylesheet" href="/jarvis.css?v=29">
-<script src="/app.js?v=29" defer></script><script src="/projects.js?v=29" defer></script><script src="/pwa.js?v=29" defer></script><script src="/office-live.js?v=29" defer></script><script src="/jarvis.js?v=29" defer></script><script src="/live-monitor.js?v=29" defer></script><script src="/evidence.js?v=29" defer></script><script src="/vercel-console.js?v=29" defer></script></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=29"><link rel="stylesheet" href="/jarvis.css?v=29"><link rel="stylesheet" href="/chat-threads.css?v=30">
+<script src="/app.js?v=29" defer></script><script src="/chat-threads.js?v=30" defer></script><script src="/projects.js?v=29" defer></script><script src="/pwa.js?v=29" defer></script><script src="/office-live.js?v=29" defer></script><script src="/jarvis.js?v=29" defer></script><script src="/live-monitor.js?v=29" defer></script><script src="/evidence.js?v=29" defer></script><script src="/vercel-console.js?v=29" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -84,7 +84,24 @@
 </div></section>
 <section id="section-agents" class="view" hidden><div class="panel padded"><h1>Equipe de especialistas</h1><p>Selecione um agente na lista para conhecer sua função e atividade atual.</p><div id="agent-list" class="agent-list"></div><div id="agent-detail" class="detail">Clique em um especialista.</div></div></section>
 <section id="section-missions" class="view" hidden><div class="panel padded"><h1>Missões da equipe</h1><p>Uma missão é analisada pelo supervisor e pelos cinco especialistas. As análises são textuais; não editam sites automaticamente.</p><form id="mission-form"><label for="mission-description">Descreva o objetivo</label><textarea id="mission-description" rows="4" maxlength="12000" placeholder="Ex.: Planeje uma nova funcionalidade de reservas com requisitos, arquitetura, design e testes." required></textarea><button class="primary" type="submit">Iniciar missão</button></form><h2>Histórico de missões</h2><div id="mission-list"></div><div id="mission-detail" class="detail"></div></div></section>
-<section id="section-chat" class="view"><div class="panel padded">
+<section id="section-chat" class="view chat-workspace">
+<button type="button" id="chat-thread-backdrop" class="chat-thread-backdrop" aria-label="Fechar lista de conversas" hidden></button>
+<aside id="chat-thread-sidebar" class="chat-thread-sidebar" aria-label="Conversas por projeto">
+ <div class="chat-thread-sidebar-top"><strong>Conversas</strong><button type="button" id="chat-thread-close" class="chat-icon-button" aria-label="Fechar lista">×</button></div>
+ <button id="chat-thread-create" type="button" class="chat-thread-new">＋ Nova conversa</button>
+ <label for="chat-thread-search" class="sr-only">Pesquisar conversas</label><input id="chat-thread-search" type="search" placeholder="⌕ Buscar conversas" autocomplete="off">
+ <div class="chat-thread-tabs" role="group" aria-label="Estado das conversas"><button type="button" data-chat-filter="active" aria-pressed="true">Ativas</button><button type="button" data-chat-filter="archived" aria-pressed="false">Arquivadas</button><button type="button" data-chat-filter="trashed" aria-pressed="false">Lixeira</button></div>
+ <label class="chat-thread-project-filter-label" for="chat-thread-project-filter">Projeto</label>
+ <select id="chat-thread-project-filter"><option value="">Todos os projetos</option></select>
+ <div id="chat-thread-list" class="chat-thread-list" role="list"><p class="muted">Carregando conversas…</p></div>
+ <button id="chat-thread-new-project" class="chat-thread-new-project" type="button">＋ Criar novo projeto</button>
+</aside>
+<div class="panel padded chat-main-panel">
+<div class="chat-context-bar">
+ <button id="chat-thread-toggle" class="chat-icon-button" type="button" aria-label="Abrir lista de conversas" aria-expanded="false">☰</button>
+ <div class="chat-current-context"><strong id="chat-current-title">Selecione uma conversa</strong><small id="chat-current-project">Escolha o projeto para começar</small></div>
+ <button id="chat-thread-menu" class="chat-icon-button" type="button" aria-label="Organizar conversa">⋯</button>
+</div>
 <div class="jarvis-chat-header"><div><h1 class="jarvis-chat-title">VINI · Chat Neural</h1><span class="chat-status">Pronto para conversar</span></div><button id="jarvis-chat-office" type="button" class="secondary" aria-label="Abrir escritório dos agentes">Ver equipe ↗</button></div>
 <div id="jarvis-chat-hero" class="jarvis-chat-hero"><div class="jarvis-core"></div><div class="jarvis-hero-copy"><strong>Olá! Sou o VINI.</strong><span>Seu supervisor de IA. Como posso ajudar?</span></div><div class="jarvis-intro-buttons"><button type="button" id="jarvis-chat-new">+ Novo projeto</button><button type="button" id="jarvis-chat-activities">Ver atividades</button></div></div>
 <div class="vini-chat-actions"><button id="vini-live-chat-open" type="button" class="secondary">◉ Ações do VINI · diário</button><button id="vini-chat-proofs" type="button" class="secondary">✓ Ver resultados comprovados</button></div>
@@ -140,5 +157,12 @@
 <div class="vini-live-modal-head"><div><strong>◉ Diário de execução</strong><p>Eventos reais salvos na Cloudflare · D1</p></div><button id="vini-live-modal-close" type="button" aria-label="Fechar diário">×</button></div>
 <div id="vini-live-modal-filters" class="vini-live-filters" role="group" aria-label="Agente do diário"></div>
 <div id="vini-live-modal-events" class="vini-live-modal-events" role="log"></div>
+</dialog>
+<dialog id="chat-thread-dialog" class="chat-thread-dialog" aria-labelledby="chat-thread-dialog-title">
+ <div class="chat-thread-dialog-head"><strong id="chat-thread-dialog-title">Nova conversa</strong><button type="button" id="chat-thread-dialog-close" aria-label="Fechar">×</button></div>
+ <p id="chat-thread-dialog-hint">Escolha o projeto desta conversa.</p>
+ <label for="chat-thread-project-picker">Projeto vinculado</label>
+ <select id="chat-thread-project-picker"></select>
+ <div class="chat-thread-dialog-actions"><button type="button" id="chat-thread-dialog-cancel" class="secondary">Cancelar</button><button type="button" id="chat-thread-dialog-confirm" class="primary">Criar conversa</button></div>
 </dialog>
 </body></html>
