@@ -20,7 +20,7 @@ test('each voice session maps to an active D1 conversation, not shared global me
  assert.doesNotMatch(server,/localStorage|globalThreadId/);
 });
 test('WebSocket route authenticates and validates thread before Agent routing',()=>{
- assert.match(index,/\/agents\/ViniVoiceAgent\//);
+ assert.match(index,/\/agents\/vini-voice-agent\//);
  assert.match(index,/authorizeSession\(request,env\)/);
  assert.match(index,/chooseThread\(env\.DB,threadId\)/);
  assert.match(index,/routeAgentRequest\(request,env/);
