@@ -17,7 +17,7 @@ export function guardUnsupportedActionClaims(raw){
  const promises=sentences.filter(s=>ACTION_VERB.test(s)&&EXECUTION_VERB.test(s)&&EXTERNAL_SUBJECT.test(s));
  if(!promises.length)return {text:input,intercepted:false};
  return {
-  text:'Não executei nenhuma ação externa nesta conversa. A resposta anterior do modelo prometia operações sem comprovante de execução, por isso foi bloqueada. O VINI consegue registrar missões de análise e, quando houver um repositório identificado e GitHub autorizado, abrir um trabalho de código que pode gerar um pull request rascunho. Ele ainda não possui integração operacional para entrar na Vercel e forçar builds. Se o pedido exigir publicação, mostrarei isso como bloqueado até existir uma integração e um resultado verificável.',
+  text:'Não executei esse build. A resposta anterior prometeu uma ação sem comprovante, então foi bloqueada. Para reconstruir uma prévia real, abra a conexão Vercel e selecione o projeto. Não vou afirmar que foi publicado antes de receber um ID de deployment.',
   intercepted:true,reason:'unverified_execution_claim'
  };
 }
