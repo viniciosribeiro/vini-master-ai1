@@ -1,4 +1,5 @@
 import {readExecutionLedger} from './execution-ledger.js';
+import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVercelProjects,getVercelDeployments,initiatePreviewRedeploy,vercelDeploymentStatus} from './vercel-connector.js';
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {readLiveEvents} from './live-events.js';
 import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
@@ -85,6 +86,74 @@ export async function handleAPI(req,env){
   if(path==='/api/integrations/nvidia'&&method==='DELETE'){
    await removeNvidia(env);
    return respond({connected:!!env.NVIDIA_API_KEY,externalSecret:!!env.NVIDIA_API_KEY});
+  }
+  // Vercel operations require explicit browser action, scoped auth and proof-bearing IDs.
+  if(path==='/api/vercel/status'&&method==='GET'){
+   const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+   return respond({connected:!!await readVercelToken(env),teamId:team?.value||'',previewBuildsOnly:true});
+  }
+  if(path==='/api/vercel/connect'&&method==='POST'){
+   const body=await parse(req),key=String(body.token||'').trim(),teamId=String(body.teamId||'').trim();
+   if(key.length<20||key.length>550||/\s/.test(key))return fail('Informe um token Vercel válido na área protegida de Configurações.',400);
+   if(teamId&&!/^team_[A-Za-z0-9]{8,80}$/.test(teamId))return fail('Team ID inválido.',400);
+   try{
+    const verification=await testVercelToken(key,teamId);
+    await saveVercelToken(env,key);
+    await env.DB.prepare("INSERT INTO settings(key,value) VALUES('vercel_team_id',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(teamId).run();
+    await log(env,'infra','Vercel conectada e acesso a projetos confirmado pela API');
+    return respond({connected:true,account:verification.account,projectsFound:verification.projects,teamId});
+   }catch(e){return fail('Falha na conexão Vercel: '+String(e.message||e).slice(0,180),403);}
+  }
+  if(path==='/api/vercel/disconnect'&&method==='POST'){
+   await disconnectVercel(env);await env.DB.prepare("DELETE FROM settings WHERE key='vercel_team_id'").run();
+   await log(env,'infra','Conexão da Vercel desconectada pelo proprietário');
+   return respond({connected:false});
+  }
+  if(path==='/api/vercel/projects'&&method==='GET'){
+   try{
+    const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+    return respond({projects:await getVercelProjects(env,team?.value||'')});
+   }catch(e){return fail(String(e.message||e).slice(0,180),503);}
+  }
+  if(path==='/api/vercel/deployments'&&method==='GET'){
+   try{
+    const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+    return respond({deployments:await getVercelDeployments(env,url.searchParams.get('projectId'),team?.value||'')});
+   }catch(e){return fail(String(e.message||e).slice(0,180),503);}
+  }
+  if(path==='/api/vercel/builds'&&method==='GET'){
+   const data=await env.DB.prepare('SELECT id,project_id,project_name,source_deployment_id,preview_url,status,created_at,updated_at FROM vercel_builds ORDER BY created_at DESC LIMIT 12').all();
+   return respond({builds:data.results||[]});
+  }
+  if(path==='/api/vercel/preview-redeploy'&&method==='POST'){
+   const body=await parse(req),projectId=String(body.projectId||''),deploymentId=String(body.deploymentId||'');
+   if(body.confirm!=='REIMPLANTAR PREVIA')return fail('Confirmação explícita de rebuild de teste necessária.',409);
+   const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM vercel_builds WHERE date(created_at)=date('now')").first();
+   if(Number(count?.n||0)>=3)return fail('Limite diário de 3 rebuilds Vercel atingido.',429);
+   try{
+    const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+    const result=await initiatePreviewRedeploy(env,projectId,deploymentId,team?.value||'');
+    await env.DB.prepare('INSERT INTO vercel_builds(id,project_id,project_name,source_deployment_id,preview_url,status) VALUES(?,?,?,?,?,?)')
+     .bind(result.id,result.projectId,result.name,result.sourceDeploymentId,result.url,result.status).run();
+    await log(env,'infra','Vercel aceitou rebuild de PRÉVIA: '+result.name+' · ID '+result.id);
+    return respond({deployment:result,execution:{kind:'vercel_preview',status:result.status,id:result.id,externalWorkConfirmed:true,proofUrl:null}});
+   }catch(e){
+    await log(env,'infra','Vercel recusou tentativa de rebuild: '+String(e.message||e).slice(0,150));
+    return fail('A Vercel não aceitou o rebuild: '+String(e.message||e).slice(0,190),503);
+   }
+  }
+  if(path.startsWith('/api/vercel/builds/')&&method==='GET'){
+   const id=path.slice('/api/vercel/builds/'.length);
+   if(!/^dpl_[A-Za-z0-9]{8,80}$/.test(id))return fail('ID de deployment inválido',400);
+   const exists=await env.DB.prepare('SELECT id,status FROM vercel_builds WHERE id=?').bind(id).first();
+   if(!exists)return fail('Deployment não encontrado no histórico autorizado do VINI',404);
+   try{
+    const team=await env.DB.prepare("SELECT value FROM settings WHERE key='vercel_team_id'").first();
+    const result=await vercelDeploymentStatus(env,id,team?.value||'');
+    await env.DB.prepare('UPDATE vercel_builds SET status=?,preview_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(result.status,result.url,id).run();
+    if(result.status!==exists.status)await log(env,'infra','Build Vercel '+id+': '+exists.status+' → '+result.status);
+    return respond({deployment:result});
+   }catch(e){return fail('Erro ao consultar deployment: '+String(e.message||e).slice(0,170),503);}
   }
   if(path==='/api/profile'&&method==='GET')return respond({profile:await readProfile(env.DB)});
   if(path==='/api/profile'&&method==='PUT'){
