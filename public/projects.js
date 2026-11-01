@@ -10,7 +10,7 @@ function projectText(tag,value,cls=''){
  const node=document.createElement(tag);node.textContent=String(value??'');if(cls)node.className=cls;return node;
 }
 async function loadProjects(){
- if(!token||!authValidated)return;
+ if(!authValidated)return;
  try{
   const [projects,ideas,github]=await Promise.all([api('/projects'),api('/ideas'),api('/github/status')]);
   portfolio=projects.projects||[];portfolioIdeas=ideas.ideas||[];githubReady=!!github.connected;
@@ -281,10 +281,10 @@ pj('github-disconnect').addEventListener('click',async()=>{
  try{await api('/github/disconnect',{method:'POST',body:{}});githubReady=false;await loadProjects();projectNotice('GitHub desconectado.');}
  catch(e){projectNotice(e.message);}
 });
-setInterval(()=>{if(token&&authValidated&&!pj('section-projects').hidden&&selectedProject)loadProjectJobs();},12000);
+setInterval(()=>{if(authValidated&&!pj('section-projects').hidden&&selectedProject)loadProjectJobs();},12000);
 
 async function loadWorkProfile(){
- if(!token||!authValidated)return;
+ if(!authValidated)return;
  try{const data=await api('/profile');pj('work-profile-text').value=data.profile?.content||'';}
  catch(e){pj('work-profile-feedback').textContent=e.message;}
 }
@@ -309,7 +309,7 @@ pj('profile-delete').addEventListener('click',async()=>{
 
 let previousIdeaCount=null;
 async function checkIdeaAlerts(){
- if(!token||!authValidated)return;
+ if(!authValidated)return;
  try{
   const data=await api('/ideas');
   const count=(data.ideas||[]).filter(x=>x.status==='new').length;
