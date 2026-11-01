@@ -8,7 +8,7 @@ const INQUIRY=/^\s*(?:como|qual|quais|o que|por que|porque|quando|onde|quanto|se
 const COMMAND=/\b(?:fa[cç]a|faz(?:a)?|execute|delegue|orquestre|implemente|corrija|arrume|conserte|refa[cç]a|melhore|desenvolva|programe|construa|crie|atualize|otimize|analise|pesquise|planeje|revise|teste|valide|prepare|investigue|integre|adapte|configure|publique|implante|verifique)\b/iu;
 const TASK_NOUN=/\b(?:projeto|site|aplicativo|app|sistema|plataforma|interface|layout|tela|bug|erro|problema|c[oó]digo|fun[cç][aã]o|m[oó]dulo|api|agente|equipe|rob[oô]|mem[oó]ria|deploy|publica[cç][aã]o|teste|seguran[cç]a|acessibilidade|documenta[cç][aã]o|p[aá]gina|formul[aá]rio|fluxo|experi[eê]ncia|integra[cç][aã]o|reposit[oó]rio|github|cloudflare|vercel|performance|desempenho|infraestrutura|banco|dados|reservas|usu[aá]rios|clientes)\b/iu;
 const PURE_INFO=/\b(?:me explique|s[oó] me diga|n[aã]o fa[cç]a|apenas responda|somente responda|sem implementar|sem executar|n[aã]o altere|s[oó] uma d[uú]vida)\b/iu;
-const CODE_ACTION=/\b(?:implemente|corrija|arrume|conserte|programe|desenvolva|adicione|aplique|integre|refa[cç]a|codifique|construa|atualize)\b/iu;
+const CODE_ACTION=/\b(?:implemente|implementar|corrija|corrigir|arrume|arrumar|conserte|consertar|programe|programar|desenvolva|desenvolver|adicione|adicionar|aplique|aplicar|integre|integrar|refa[cç]a|refazer|codifique|codificar|construa|construir|atualize|atualizar)\b/iu;
 export function routeWorkIntent(input){
  const text=String(input||'').trim();
  if(text.length<14||SALUTATION.test(text)||NEGATION.test(text)||PURE_INFO.test(text))return null;
@@ -16,7 +16,7 @@ export function routeWorkIntent(input){
  const verbs=/\b(?:criar|fazer|executar|delegar|orquestrar|implementar|corrigir|arrumar|consertar|refazer|melhorar|desenvolver|programar|construir|atualizar|otimizar|analisar|pesquisar|planejar|revisar|testar|validar|preparar|investigar|integrar|adaptar|configurar|publicar|implantar|verificar|trabalhe|resolva|organize|adicione|gere|ajuste)\b/iu;
  if(!(COMMAND.test(text)||verbs.test(text))||!TASK_NOUN.test(text))return null;
  const broad=/\b(?:equipe|completo|tudo|orquestre|delegue|mult[ií]plos especialistas)\b/iu.test(text)||/\b(?:crie|construa|desenvolva)\s+(?:(?:um|o|uma|a)\s+)?(?:projeto|sistema|site|app|aplicativo)\b/iu.test(text);
- const code=/\b(?:c[oó]digo|programa[cç][aã]o|api|backend|frontend|bug|erro|refator|implemente|corrija|fun[cç][aã]o|integra[cç][aã]o)\b/iu.test(text);
+ const code=/\b(?:c[oó]digo|programa[cç][aã]o|api|backend|frontend|bug|erro|refator|implemente|implementar|corrija|corrigir|fun[cç][aã]o|integra[cç][aã]o)\b/iu.test(text);
  const visual=/\b(?:visual|interface|tela|layout|design|ux|ui|responsiv|avatar|rob[oô]|anima[cç][aã]o|estilo)\b/iu.test(text);
  const qa=/\b(?:teste|valide|verifique|audite|seguran[cç]a|erro|bug|falha|corrija)\b/iu.test(text);
  const infra=/\b(?:deploy|publica[cç][aã]o|hospedagem|cloudflare|vercel|infraestrutura|worker|dom[ií]nio|servidor|performance)\b/iu.test(text);
