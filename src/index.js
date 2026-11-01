@@ -17,7 +17,7 @@ export default {
   // Native voice is intentionally disabled in production until this branch passes
   // Cloudflare SDK build, D1 auth, Portuguese ASR and audio output smoke tests.
   // This route is gated and cannot bypass the regular VINI session cookie.
-  if(path.startsWith('/agents/ViniVoiceAgent/')){
+  if(path.startsWith('/agents/vini-voice-agent/')){
    if(request.method!=='GET'||request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
    const threadId=path.split('/')[3]||'';
    if(!/^[a-f0-9-]{36}$/i.test(threadId))return new Response('Invalid chat thread',{status:400});
