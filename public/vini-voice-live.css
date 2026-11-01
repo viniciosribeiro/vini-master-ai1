@@ -1,0 +1,50 @@
+/* VINI Voice Studio — responsive visual modes; no remote voice access by default */
+.vs-open{display:inline-flex;align-items:center;gap:8px;border:1px solid #4fd9fb!important;background:linear-gradient(125deg,#0875b8,#512a98)!important;color:#fff!important;border-radius:15px!important;padding:12px 16px!important;margin:9px 0 13px!important;font-size:14px!important;font-weight:800!important;box-shadow:0 0 18px #00aeef55!important;min-height:46px}
+.vs-open:focus-visible,.vs-shell button:focus-visible,.vs-shell select:focus-visible,.vs-shell input:focus-visible{outline:3px solid #7be9ff!important;outline-offset:3px!important}
+.vs-dialog{border:1px solid #328dcb!important;border-radius:25px!important;max-width:640px!important;width:calc(100vw - 28px)!important;max-height:calc(100dvh - 30px)!important;padding:0!important;background:#051128!important;color:#e9f9ff!important;box-shadow:0 28px 100px #000e,0 0 70px #0486ff48!important;overflow:auto}
+.vs-dialog::backdrop{background:#010713e8;backdrop-filter:blur(15px)}
+.vs-shell{padding:22px!important;display:flex;flex-direction:column;gap:13px;background:radial-gradient(circle at 52% 22%,#143a7a55,transparent 37%),linear-gradient(155deg,#061931,#030d21 75%,#08142b)}
+.vs-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.vs-head small{color:#48daef;font-size:10px;letter-spacing:.14em;font-weight:800}
+.vs-head h2{font-weight:850;font-size:clamp(22px,3vw,31px);line-height:1.15;margin:3px 0;color:#fff}
+.vs-x{border:1px solid #2b668f;border-radius:10px;background:#0e2a4c;color:#def9ff;width:40px;height:40px;font-size:18px;flex-shrink:0}
+.vs-project{color:#b5d6e8;font-size:12px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vs-visual{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;flex-direction:column;height:230px;border-radius:19px;overflow:hidden;border:1px solid #205583;background:radial-gradient(circle at center,#123b78 0,#06142f 58%,#020919 94%)}
+.vs-visual .vs-core{height:170px;width:170px;border-radius:100%;position:absolute;background:radial-gradient(circle at 36% 30%,#b7eeff,#25d3fc 19%,#487cf7 45%,#260b5f 74%);box-shadow:0 0 20px #00dcff,0 0 65px #7252f8aa,inset -20px -22px 28px #0a1257;animation:vsFloat 5s ease-in-out infinite}
+.vs-orbit{position:absolute;width:210px;height:210px;border:2px solid #6a99ff77;border-radius:50%;box-shadow:0 0 20px #2f85ff75;animation:vsSpin 12s linear infinite}
+.vs-pulse{position:absolute;width:260px;height:260px;border-radius:50%;border:1px solid #4aebfb3f;animation:vsPulse 3s ease-in-out infinite}
+.vs-mode-label{position:absolute!important;bottom:7px;left:0;right:0;z-index:4;color:#d6f5ff;text-align:center;text-shadow:0 0 12px #000;font-size:12px;font-weight:800}
+.vs-visual[data-mode=robot] .vs-core{background:url('/ref-robot.webp') center/contain no-repeat!important;border-radius:0;width:200px;height:208px;box-shadow:none;filter:drop-shadow(0 0 20px #47dfff);animation:vsFloat 4s ease-in-out infinite}
+.vs-visual[data-mode=network] .vs-core{background:url('/ref-neural.webp') center/contain no-repeat!important;border-radius:0;width:260px;height:200px;box-shadow:none;filter:drop-shadow(0 0 18px #327fff);animation:vsFloat 6s ease-in-out infinite}
+.vs-visual[data-mode=network] .vs-orbit{width:275px;height:190px;border-radius:50%;transform:rotate(14deg)}
+.vs-dialog[data-status=listening] .vs-pulse{border-color:#33ebc0;box-shadow:0 0 16px #14dfab80}
+.vs-dialog[data-status=speaking] .vs-pulse{animation-duration:.75s;border-color:#d84fff;box-shadow:0 0 23px #b536f9b8}
+.vs-dialog[data-status=thinking] .vs-orbit{animation-duration:3s}
+.vs-status{text-align:center;font-size:14px;color:#bdf3ff;font-weight:750;margin:0;min-height:22px}
+.vs-heard{min-height:21px;text-align:center;color:#a5c9db;font-style:italic;font-size:12px;margin:0}
+.vs-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.vs-mode{min-height:42px;border-radius:12px!important;background:#092747!important;color:#acd4e8!important;border:1px solid #225f89!important;font-weight:750;font-size:12px;padding:7px}
+.vs-mode[aria-pressed=true]{background:#113e72!important;color:white!important;border-color:#45dcff!important;box-shadow:0 0 13px #2086ff4e}
+.vs-log{min-height:112px;max-height:175px;overflow-y:auto;border:1px solid #275a7b;border-radius:14px;background:#05152bc0;padding:10px;display:flex;flex-direction:column;gap:7px}
+.vs-placeholder{font-size:12px;color:#96bace;margin:5px}
+.vs-line{max-width:90%;font-size:12px;line-height:1.5;padding:9px 12px;border-radius:12px;margin:0;overflow-wrap:anywhere}
+.vs-user{background:#0e5880;color:#ecfaff;align-self:flex-end}
+.vs-vini{background:#1c2154;border:1px solid #5f60bf;color:#e5dcff;align-self:flex-start}
+.vs-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.vs-btn{min-height:44px;padding:7px 6px;border-radius:11px!important;font-size:12px;font-weight:800;color:#f4fbff;background:#164978;border:1px solid #368bce!important}
+.vs-btn#vs-interrupt{background:#633383}.vs-btn#vs-end{background:#63283b;border-color:#b44968!important}
+.vs-btn:disabled{opacity:.45}
+.vs-settings{border:1px solid #27547a;background:#04152b;border-radius:12px;padding:10px 13px;font-size:12px}
+.vs-settings summary{font-weight:750;color:#c5e9fa;cursor:pointer;min-height:22px}
+.vs-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 0}
+.vs-row label{color:#a7cce2;min-width:105px}
+.vs-row select{flex:1;min-width:170px;max-width:100%;height:42px;background:#0a2e4d;color:#ebfaff;border:1px solid #3a8cc5;border-radius:9px;padding:7px}
+.vs-row input{flex:1;accent-color:#27c5e9}
+.vs-row small{color:#9cb9c9;width:100%}
+.vs-row .vs-sample{border-radius:8px;background:#084e82;color:#fff;min-height:36px;padding:7px 10px;border:1px solid #398ed1}
+.vs-disclaimer{font-size:10px;line-height:1.4;color:#95b4c8;margin:0}
+@keyframes vsFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-6px)}}
+@keyframes vsSpin{to{transform:rotate(360deg)}}
+@keyframes vsPulse{50%{transform:scale(1.08);opacity:.5}}
+@media(max-width:780px){.vs-dialog{max-height:calc(100dvh - 12px)!important;width:calc(100vw - 12px)!important;border-radius:17px!important}.vs-shell{padding:14px!important;gap:10px}.vs-visual{height:195px}.vs-visual .vs-core{height:146px;width:146px}.vs-visual[data-mode=robot] .vs-core{height:180px;width:165px}.vs-visual[data-mode=network] .vs-core{height:175px;width:220px}.vs-orbit{width:190px;height:190px}.vs-pulse{width:230px;height:230px}.vs-visual[data-mode=network] .vs-orbit{width:215px;height:150px}.vs-log{min-height:78px;max-height:145px}.vs-open{margin:4px 0 9px}}
+@media(prefers-reduced-motion:reduce){.vs-visual *{animation:none!important}}
