@@ -79,6 +79,7 @@ function setRobotMood(mood){
  if(el)el.dataset.expression=mood;
  const active=document.getElementById('jarvis-voice-status');
  if(active&&mood==='thinking')active.textContent='VINI está pensando…';
+ if(active&&mood==='idle'&&!window.jarvisVoiceSpeaking)active.textContent='Fale comigo ou digite sua mensagem';
 }
 window.jarvisSetMood=setRobotMood;
 window.jarvisVoiceSpeaking=false;
