@@ -387,3 +387,55 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
  #jarvis-task-open{font-size:10px;padding:7px 8px;max-width:92px}
  .delegation-actions button{min-height:40px;flex:1}
 }
+
+
+/* Real-time D1 action diary: bounded, keyboard accessible, phone-first. */
+.vini-live-panel{min-width:0;overflow:hidden}
+.vini-live-panel .panel-heading{gap:8px;flex-wrap:wrap}
+.vini-live-panel .panel-heading h2{font-size:17px!important}
+#vini-live-status{color:#65deb3!important;background:#103b45;border:1px solid #227c89;padding:6px 8px;border-radius:9px;font-size:10px;white-space:nowrap}
+#vini-live-status[data-connection=error]{color:#ffd8aa!important;border-color:#c88348;background:#38291f}
+#vini-live-status[data-connection=active]{color:#82f8b2!important;background:#164a3f}
+.vini-live-subtitle{color:#a4c9dd;font-size:12px;line-height:1.5;padding:2px 15px 7px;margin:0;overflow-wrap:anywhere}
+.vini-live-actions{display:flex;align-items:center;gap:6px;padding:0 13px 10px;flex-wrap:wrap}
+.vini-live-actions>span{font-size:11px;color:#8bb8d0;margin-right:auto}
+.vini-live-actions button{min-height:38px;font-size:11px;padding:7px 10px;border-radius:11px}
+.vini-live-filters{display:flex;gap:6px;padding:6px 12px 12px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain;max-width:100%}
+.vini-filter{font-family:inherit;border:1px solid #255579;color:#a9cce3;background:#0a2540;white-space:nowrap;padding:8px 11px;min-height:37px;border-radius:12px;font-size:11px;flex:0 0 auto}
+.vini-filter.active{background:#126995;border-color:#3bd6ff;color:#f4fbff;box-shadow:0 0 12px #19b7ec2b}
+.vini-live-events{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;min-height:135px;max-height:min(45dvh,530px);margin:0 11px 8px;padding:2px 3px}
+.vini-live-event{background:#091e34;border:1px solid #205277;border-left:3px solid #2996cc;border-radius:12px;margin:0 0 9px;padding:9px 11px;display:grid;gap:6px;min-width:0}
+.vini-live-event[data-kind=success]{border-left-color:#4fe4aa}
+.vini-live-event[data-kind=error]{border-left-color:#ed9177}
+.vini-live-event[data-kind=waiting]{border-left-color:#e8c46e}
+.vini-live-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.vini-live-agent{font-weight:800;font-size:12px;color:#67dcf5}
+.vini-live-agent.dev{color:#7befb1}.vini-live-agent.design{color:#ceadff}.vini-live-agent.qa{color:#73f0d1}.vini-live-agent.infra{color:#ffc58a}.vini-live-agent.research{color:#82bfff}
+.vini-live-head time{color:#819fb8;font-size:10px;font-variant-numeric:tabular-nums}
+.vini-live-description{color:#e5f4ff!important;font-size:12px;line-height:1.43;margin:0!important;overflow-wrap:anywhere}
+.vini-live-trail{color:#779eb6;font-size:10px;overflow-wrap:anywhere}
+.vini-live-empty{color:#93b7cc;font-size:12px;padding:14px;line-height:1.5}
+.vini-legacy-history{margin:0 12px 12px;border-top:1px solid #255575;padding:12px 0}
+.vini-legacy-history summary{color:#9ac6d9;font-size:12px;cursor:pointer;min-height:32px}
+.vini-legacy-history .timeline{max-height:240px;overflow:auto}
+.vini-chat-actions{display:flex;justify-content:flex-start;margin:2px 0 7px}
+#vini-live-chat-open{font-size:11px;min-height:36px;padding:6px 11px!important;border-radius:18px}
+.vini-live-modal{color:#f0fbff;background:#07192d;border:1px solid #36b8e3;width:min(96vw,680px);max-width:680px;height:min(88dvh,850px);max-height:88dvh;margin:auto;border-radius:23px;padding:0;box-shadow:0 35px 100px #000c;overflow:hidden;flex-direction:column}
+.vini-live-modal[open]{display:flex}
+.vini-live-modal::backdrop{background:#020813da;backdrop-filter:blur(4px)}
+.vini-live-modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 17px 8px;gap:12px}
+.vini-live-modal-head strong{font-size:19px}
+.vini-live-modal-head p{margin:4px 0 0;color:#97b8cd;font-size:12px}
+#vini-live-modal-close{border:1px solid #4387ab;color:white;background:#123b59;width:44px;height:44px;min-width:44px;border-radius:12px;font-size:22px}
+.vini-live-modal-events{overflow-y:auto;overscroll-behavior:contain;flex:1;min-height:0;padding:5px 15px 18px;scrollbar-width:thin}
+.vini-live-modal-events .vini-live-event{margin-bottom:9px}
+@media(max-width:780px){
+ .vini-live-panel{margin-bottom:14px}
+ .vini-live-subtitle{font-size:11px}
+ .vini-live-events{max-height:360px}
+ .vini-live-modal{position:fixed;inset:auto 0 0!important;width:100%;height:85dvh;max-height:85dvh;max-width:none;border-radius:23px 23px 0 0;margin:0!important;padding-bottom:env(safe-area-inset-bottom)}
+ .vini-live-modal-head{padding:13px 13px 7px}
+ .vini-live-modal-head strong{font-size:16px}
+ .vini-live-modal-events{padding:4px 11px 12px}
+}
+@media(prefers-reduced-motion:reduce){.vini-live-modal,.vini-live-event{animation:none!important;transition:none!important}}
