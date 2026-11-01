@@ -40,7 +40,7 @@ test('Navigation still exposes agents and office on mobile',()=>{
 });
 test('Old PWA cache cannot keep previous broken reference styles',()=>{
  assert.match(sw,/vini-master-shell-v22/);
- assert.match(html,/vini-reference\.js\?v=21/);
+ assert.match(html,/vini-reference\.js\?v=22/);
  assert.match(html,/vini-reference\.css\?v=21/);
  assert.match(html,/Control Center R3 0\.17\.4/);
  assert.match(worker,/version:'0\.17\.4'/);
