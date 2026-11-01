@@ -1,5 +1,5 @@
-const CACHE='vini-master-shell-v2';
-const ASSETS=['/','/styles.css','/mobile-live.css','/app.js','/mobile-live.js','/projects.js','/pwa.js','/office.svg','/icon.svg','/icon-192.png','/icon-512.png','/manifest.webmanifest'];
+const CACHE='vini-master-shell-v3';
+const ASSETS=['/','/styles.css','/mobile-live.css','/app.js','/mobile-live.js','/projects.js','/pwa.js','/jarvis.css','/jarvis.js','/icon.svg','/icon-192.png','/icon-512.png','/manifest.webmanifest'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS).catch(()=>{})));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('vini-master-shell-')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim();});
 self.addEventListener('fetch',event=>{
