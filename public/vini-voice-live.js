@@ -1,138 +1,216 @@
-/* VINI Master AI Voice Studio — R1: real browser-based continuous turns.
-   Messages go through the existing authenticated D1 chat and current project.
-   This is NOT the planned Cloudflare WebSocket streaming voice engine. */
+/* VINI Voice Studio R4.
+   Mic STT is browser turn recognition. Speech output is real OpenAI TTS-1 through
+   authenticated Cloudflare Gateway; no robotic speechSynthesis fallback.
+   Paid generation only after explicit informed consent, capped in Worker D1.
+ */
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
+const make=(tag,cls,value)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;};
 const Rec=()=>window.SpeechRecognition||window.webkitSpeechRecognition;
-const el=(tag,cls,text)=>{const v=document.createElement(tag);if(cls)v.className=cls;if(text!==undefined)v.textContent=String(text);return v;};
-let settings={mode:'orb',voice:'',rate:1,pitch:1};
-try{settings={...settings,...JSON.parse(localStorage.getItem('vini-voice-config')||'{}')};}catch{}
-const save=()=>{try{localStorage.setItem('vini-voice-config',JSON.stringify(settings));}catch{}};
-const s={active:false,paused:false,listening:false,thinking:false,speaking:false,rec:null,timer:null,timeout:null,voices:[],oldSpeak:null,pending:'',errors:0};
-function status(msg,kind='idle'){$('vs-status').textContent=msg;$('vini-voice-studio').dataset.status=kind;}
-function badge(){const v=$('vs-visual');v.dataset.mode=settings.mode;$('vs-mode-label').textContent={orb:'Esfera neural',robot:'Robô VINI',network:'Rede neural viva'}[settings.mode];document.querySelectorAll('[data-vs-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.vsMode===settings.mode)));}
-function log(text,who){const root=$('vs-log'),v=el('p','vs-line vs-'+who,text);root.append(v);while(root.children.length>12)root.firstElementChild.remove();root.scrollTop=root.scrollHeight;}
-function clearTimers(){clearTimeout(s.timer);clearTimeout(s.timeout);s.timer=null;s.timeout=null;}
-function stopRec(){if(!s.rec)return;const r=s.rec;s.rec=null;s.listening=false;r.onresult=null;r.onend=null;r.onerror=null;try{r.abort();}catch{}}
-function stopSpeak(){try{speechSynthesis.cancel();}catch{}s.speaking=false;window.jarvisVoiceSpeaking=false;}
-function pause(){s.paused=true;s.thinking=false;clearTimers();stopRec();stopSpeak();status('Pausado. Toque em Retomar.','paused');sync();}
-function close(){s.active=false;s.paused=false;s.thinking=false;clearTimers();stopRec();stopSpeak();if($('vini-voice-studio').open)$('vini-voice-studio').close();window.jarvisSetMood?.('idle');}
-function sync(){$('vs-toggle').textContent=s.paused?'Retomar':'Pausar';$('vs-interrupt').disabled=!s.speaking;badge();}
-function later(ms=400){clearTimeout(s.timer);if(s.active&&!s.paused&&!s.thinking&&!s.speaking)s.timer=setTimeout(listen,ms);}
-function send(phrase){
- if(!s.active||s.paused)return;
- const form=$('chat-form'),field=$('chat-message');
- if(!form||!field){status('Não encontrei o chat atual.','error');return;}
- s.thinking=true;log(phrase,'user');$('vs-heard').textContent='';status('VINI está preparando a resposta…','thinking');
- const nav=document.querySelector('.sidebar .nav[data-section="chat"]');nav?.click();
- try{field.value=phrase;form.requestSubmit();}
- catch(e){s.thinking=false;status('Falha no envio: '+e.message,'error');later(900);return;}
- clearTimeout(s.timeout);s.timeout=setTimeout(()=>{if(!s.active||!s.thinking)return;s.thinking=false;status('Resposta de voz não recebida; verifique o chat.','error');later(600);},60000);
+const VOICES=[['nova','Nova · voz feminina'],['shimmer','Shimmer · voz feminina'],['alloy','Alloy · neutra'],['echo','Echo · voz masculina'],['onyx','Onyx · voz masculina grave'],['fable','Fable · expressiva']];
+const LIMIT=2000, MAX_COST='US$ 0,03/dia';
+let settings={mode:'orb',voice:'nova',rate:1,approved:false};
+try{settings={...settings,...JSON.parse(localStorage.getItem('vini-voice-r4')||'{}')};}catch{}
+const save=()=>{try{localStorage.setItem('vini-voice-r4',JSON.stringify(settings));}catch{}};
+const state={active:false,paused:false,listening:false,thinking:false,speaking:false,rec:null,audio:null,controller:null,retry:null,watchdog:null,pending:'',lastFinal:'',lastFinalAt:0,err:0,requestSeq:0,info:null};
+const status=(str,kind='idle')=>{const n=$('vs-status');if(n)n.textContent=str;const dlg=$('vini-voice-studio');if(dlg)dlg.dataset.status=kind;};
+function render(){
+ const dlg=$('vini-voice-studio');if(!dlg)return;
+ $('vs-toggle').textContent=state.paused?'Retomar':'Pausar';
+ $('vs-interrupt').disabled=!state.speaking;
+ $('vs-visual').dataset.mode=settings.mode;
+ $('vs-mode-label').textContent=({orb:'Esfera neural',robot:'VINI interativo',network:'Rede neural viva'})[settings.mode]||'Esfera neural';
+ for(const node of dlg.querySelectorAll('[data-vs-mode]'))node.setAttribute('aria-pressed',String(node.dataset.vsMode===settings.mode));
+ const msg=$('vs-voice-info');if(msg)msg.textContent='OpenAI TTS-1 via Cloudflare · Português disponível · streaming ainda não ativado · até '+MAX_COST;
+}
+function append(text,role){
+ const list=$('vs-log');if(!list)return;
+ const node=make('p','vs-line vs-'+role,text);list.append(node);while(list.children.length>16)list.firstElementChild.remove();list.scrollTop=list.scrollHeight;
+}
+function clearTimers(){clearTimeout(state.retry);clearTimeout(state.watchdog);state.retry=null;state.watchdog=null;}
+function stopMic(){
+ const rec=state.rec;state.rec=null;state.listening=false;
+ if(rec){rec.onresult=null;rec.onend=null;rec.onerror=null;try{rec.abort();}catch{}}
+}
+function stopAudio(){
+ state.requestSeq++;
+ try{state.controller?.abort();}catch{}
+ state.controller=null;
+ const audio=state.audio;state.audio=null;if(audio){audio.onended=audio.onerror=null;try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}}
+ state.speaking=false;window.jarvisVoiceSpeaking=false;
+}
+function pause(){state.paused=true;state.thinking=false;clearTimers();stopMic();stopAudio();status('Pausado. Toque em Retomar.','paused');render();}
+function close(){
+ state.active=false;state.paused=false;state.thinking=false;clearTimers();stopMic();stopAudio();
+ const dlg=$('vini-voice-studio');if(dlg?.open)dlg.close();
+ window.jarvisSetMood?.('idle');
+}
+function schedule(ms=300){
+ clearTimeout(state.retry);
+ if(!state.active||state.paused||state.thinking||state.speaking||state.listening)return;
+ state.retry=setTimeout(listen,ms);
 }
 function listen(){
- if(!s.active||s.paused||s.thinking||s.speaking||s.listening)return;
- if(!Rec()){status('Reconhecimento não disponível neste navegador.','error');return;}
- const rec=new (Rec())();s.rec=rec;s.pending='';
- rec.lang='pt-BR';rec.interimResults=true;rec.continuous=false;
+ if(!state.active||state.paused||state.thinking||state.speaking||state.listening)return;
+ const Ctor=Rec();if(!Ctor){status('Este navegador não permite reconhecer fala. Use Chrome atualizado.','error');return;}
+ const rec=new Ctor();state.rec=rec;state.pending='';
+ rec.lang='pt-BR';rec.continuous=false;rec.interimResults=true;
  rec.onresult=e=>{
-  let done='',live='';
-  for(let i=e.resultIndex;i<e.results.length;i++){const t=String(e.results[i][0]?.transcript||'').trim();if(e.results[i].isFinal)done+=' '+t;else live+=' '+t;}
-  if(live)$('vs-heard').textContent=live.trim();
-  if(done.trim()){s.pending=done.trim();s.thinking=true;status('Entendi. Enviando ao VINI…','thinking');try{rec.stop();}catch{}}
+  let done='',interim='';
+  for(let i=e.resultIndex;i<e.results.length;i++){
+   const v=String(e.results[i][0]?.transcript||'').trim();
+   if(e.results[i].isFinal)done+=' '+v;else interim+=' '+v;
+  }
+  if(interim)$('vs-heard').textContent=interim.trim();
+  if(done.trim()){state.pending=done.trim();state.thinking=true;status('Preparando resposta…','thinking');try{rec.stop();}catch{}}
  };
  rec.onerror=e=>{
-  if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){s.paused=true;status('Permissão de microfone negada ou dispositivo indisponível.','error');sync();}
-  else if(e.error!=='no-speech'&&e.error!=='aborted'){s.errors++;status('Reconhecimento: '+e.error,'error');}
+  if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){
+   state.paused=true;status('Microfone bloqueado. Confira as permissões.','error');render();
+  }else if(e.error!=='no-speech'&&e.error!=='aborted'){
+   state.err++;status('Reconhecimento interrompido: '+e.error,'error');
+  }
  };
  rec.onend=()=>{
-  if(s.rec!==rec)return;s.rec=null;s.listening=false;
-  if(!s.active||s.paused)return;
-  if(s.pending){const text=s.pending;s.pending='';send(text);return;}
-  if(!s.thinking)later(Math.min(2500,400+s.errors*300));
+  if(state.rec!==rec)return;state.rec=null;state.listening=false;
+  if(!state.active||state.paused)return;
+  const phrase=state.pending.trim();state.pending='';
+  if(phrase){submit(phrase);return;}
+  if(!state.thinking)schedule(Math.min(2000,450+state.err*300));
  };
- try{rec.start();s.listening=true;s.errors=0;status('Ouvindo… pode falar','listening');window.jarvisSetMood?.('listening');}
- catch{ s.rec=null;s.listening=false;s.errors++;if(s.errors<4)later(900);else status('Não foi possível iniciar o microfone.','error');}
+ try{rec.start();state.listening=true;state.err=0;status('Ouvindo em português brasileiro…','listening');window.jarvisSetMood?.('listening');}
+ catch{state.rec=null;state.listening=false;state.err++;if(state.err<4)schedule(950);else status('Microfone indisponível. Retome a sessão.','error');}
 }
-function pickVoice(){return s.voices.find(x=>x.voiceURI===settings.voice)||s.voices.find(x=>x.lang?.toLowerCase()==='pt-br')||null;}
-function speak(message,preview=false){
- const clean=String(message||'').replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').trim().slice(0,1800);
- if(!preview){clearTimeout(s.timeout);s.thinking=false;if(clean)log(clean,'vini');}
- if(!clean){later(250);return;}
- if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){status('Síntese de voz indisponível; texto salvo no chat.','error');later();return;}
- stopRec();stopSpeak();
- const u=new SpeechSynthesisUtterance(clean),v=pickVoice();u.lang='pt-BR';if(v)u.voice=v;u.rate=Number(settings.rate)||1;u.pitch=Number(settings.pitch)||1;
- s.speaking=true;window.jarvisVoiceSpeaking=true;status(preview?'Reproduzindo amostra…':'VINI falando. Toque em Interromper para voltar a falar.','speaking');window.jarvisSetMood?.('speaking');
- u.onend=u.onerror=()=>{if(!s.speaking)return;s.speaking=false;window.jarvisVoiceSpeaking=false;if(s.active&&!s.paused){status('Pode falar novamente…','listening');later(250);}sync();};
- try{speechSynthesis.speak(u);}catch{s.speaking=false;later();}
- sync();
+function submit(text){
+ if(!state.active||state.paused)return;
+ const form=$('chat-form'),field=$('chat-message');
+ if(!form||!field){status('Abra uma conversa de projeto antes de iniciar.','error');state.thinking=false;return;}
+ const now=Date.now();if(text===state.lastFinal&&now-state.lastFinalAt<1600){state.thinking=false;schedule();return;}
+ state.lastFinal=text;state.lastFinalAt=now;append(text,'user');$('vs-heard').textContent='';
+ state.thinking=true;status('VINI está respondendo…','thinking');
+ try{field.value=text;form.requestSubmit();}
+ catch{state.thinking=false;status('Falha ao enviar mensagem.','error');schedule(1000);return;}
+ clearTimeout(state.watchdog);state.watchdog=setTimeout(()=>{if(!state.active||!state.thinking)return;state.thinking=false;status('Sem resposta do VINI. Consulte o chat.','error');schedule(800);},60000);
+}
+function audioReady(url,seq,preview=false){
+ if(!state.active||state.paused||seq!==state.requestSeq)return;
+ const audio=new Audio(url);state.audio=audio;
+ audio.onended=audio.onerror=()=>{
+  if(seq!==state.requestSeq)return;
+  state.audio=null;state.speaking=false;window.jarvisVoiceSpeaking=false;
+  if(state.active&&!state.paused){status('Pode falar novamente.','listening');schedule(300);}
+  render();
+ };
+ audio.play().catch(()=>{if(seq!==state.requestSeq)return;state.audio=null;state.speaking=false;status('O Android bloqueou o áudio. Toque em Ouvir amostra novamente.','error');render();schedule(500);});
+ status(preview?'Reproduzindo amostra da OpenAI…':'VINI falando com voz da OpenAI.','speaking');render();
+}
+async function speak(text,preview=false){
+ const clean=String(text||'').replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').trim().slice(0,480);
+ if(!preview){clearTimeout(state.watchdog);state.thinking=false;if(clean)append(clean,'vini');}
+ if(!clean){schedule();return;}
+ if(!settings.approved){
+  status('Voz OpenAI desativada até autorizar o custo no Estúdio de Voz. Sem voz robotizada.','error');
+  schedule(600);return;
+ }
+ stopMic();stopAudio();
+ state.speaking=true;window.jarvisVoiceSpeaking=true;render();
+ const seq=state.requestSeq;
+ status('Gerando áudio natural na Cloudflare…','thinking');
+ const ctrl=new AbortController();state.controller=ctrl;
+ try{
+  const data=await api('/voice/tts',{method:'POST',body:{
+    confirm:'ACEITO_CUSTO_VOZ_OPENAI',text:clean,voice:settings.voice,speed:Number(settings.rate)
+  },signal:ctrl.signal});
+  if(seq!==state.requestSeq||!state.active||state.paused)return;
+  if(typeof data.audioUrl!=='string'||!/^https:\/\/[a-z0-9.-]+\.r2\.dev\//i.test(data.audioUrl))throw Error('URL de áudio inválida.');
+  audioReady(data.audioUrl,seq,preview);
+ }catch(e){
+  if(seq!==state.requestSeq)return;
+  state.speaking=false;window.jarvisVoiceSpeaking=false;
+  status('Voz OpenAI indisponível: '+String(e.message||e).slice(0,180),'error');
+  render();schedule(800);
+ }
+}
+async function open(){
+ if(!Rec()){alert('Reconhecimento de fala indisponível no navegador. Use Chrome Android.');return;}
+ const dlg=$('vini-voice-studio');if(!dlg.open)dlg.showModal();
+ state.active=true;state.paused=false;state.thinking=false;
+ $('vs-project').textContent='Projeto: '+($('vc-top-project')?.selectedOptions?.[0]?.textContent||'conversa atual');
+ render();
+ try{
+  const info=await api('/voice/tts');state.info=info;
+  $('vs-voice-info').textContent='OpenAI TTS-1 · Cota '+(info.usedCharacters||0)+'/'+(info.limitCharacters||LIMIT)+' caracteres/dia. Configuração financeira na Cloudflare necessária.';
+ }catch{status('Entre com sua chave de acesso para consultar a voz na Cloudflare.','error');}
+ if(!settings.approved)status('Autorize a voz OpenAI no painel abaixo; o microfone ainda não foi ativado.','paused');
+ else{status('Preparando escuta…');listen();}
 }
 function populate(){
- const sel=$('vs-voices');s.voices=Array.from(speechSynthesis?.getVoices?.()||[]).filter(v=>v.lang?.toLowerCase().startsWith('pt'));
- sel.replaceChildren();
- if(!s.voices.length){const opt=el('option','','Voz padrão do dispositivo');opt.value='';sel.append(opt);}
- for(const v of s.voices){const opt=el('option','',v.name+' ('+v.lang+')');opt.value=v.voiceURI;sel.append(opt);}
- if(s.voices.some(v=>v.voiceURI===settings.voice))sel.value=settings.voice;
- else{settings.voice=s.voices[0]?.voiceURI||'';sel.value=settings.voice;save();}
- $('vs-voice-info').textContent=s.voices.length+' voz(es) em português disponíveis neste dispositivo';
+ const s=$('vs-voices');s.replaceChildren();
+ for(const [id,name] of VOICES){const o=make('option','',name);o.value=id;s.append(o);}
+ if(VOICES.some(v=>v[0]===settings.voice))s.value=settings.voice;else{settings.voice='nova';s.value='nova';}
+ const speed=$('vs-rate');speed.value=String(settings.rate);
+ render();
 }
-function open(){
- if(!Rec()){alert('Seu navegador não oferece reconhecimento de fala. Use Chrome Android atualizado.');return;}
- const dialog=$('vini-voice-studio');if(!dialog.open)dialog.showModal();
- s.active=true;s.paused=false;s.thinking=false;
- $('vs-project').textContent='Histórico: '+(window.viniThreads?.selected?.()?'conversa selecionada':'conversa atual')+' · '+($('vc-top-project')?.selectedOptions?.[0]?.textContent||'Projeto atual');
- sync();status('Preparando microfone…');listen();
-}
-function make(){
+function mount(){
  if($('vini-voice-studio'))return;
- const dlg=el('dialog','vs-dialog');dlg.id='vini-voice-studio';dlg.setAttribute('aria-label','Modo Voz ao Vivo');
- const wrap=el('div','vs-shell'),header=el('header','vs-head'),brand=el('div');
- brand.append(el('small','','VINI MASTER AI · VOZ'),el('h2','','Conversa ao vivo'));
- const x=el('button','vs-x','✕');x.type='button';x.setAttribute('aria-label','Encerrar voz');header.append(brand,x);wrap.append(header);
- const project=el('p','vs-project','Histórico conectado ao chat');project.id='vs-project';wrap.append(project);
- const art=el('div','vs-visual');art.id='vs-visual';
- art.append(el('div','vs-orbit'),el('div','vs-pulse'),el('div','vs-core'));
- const name=el('p','vs-mode-label','Esfera neural');name.id='vs-mode-label';art.append(name);wrap.append(art);
- const stateLine=el('p','vs-status','Pronto');stateLine.id='vs-status';stateLine.setAttribute('role','status');stateLine.setAttribute('aria-live','polite');wrap.append(stateLine);
- const heard=el('p','vs-heard','');heard.id='vs-heard';heard.setAttribute('aria-live','polite');wrap.append(heard);
- const modes=el('div','vs-modes');for(const [id,label] of [['orb','Esfera'],['robot','Robô'],['network','Rede neural']]){
-  const b=el('button','vs-mode',label);b.type='button';b.dataset.vsMode=id;b.addEventListener('click',()=>{settings.mode=id;save();badge();});modes.append(b);
- }wrap.append(modes);
- const logPanel=el('div','vs-log');logPanel.id='vs-log';logPanel.setAttribute('aria-label','Transcrição desta sessão');logPanel.append(el('p','vs-placeholder','Fale com o VINI sobre suas ideias. As mensagens ficam na conversa atual.'));wrap.append(logPanel);
- const controls=el('div','vs-controls');
- for(const [id,label] of [['vs-toggle','Pausar'],['vs-interrupt','Interromper'],['vs-end','Encerrar']]){const b=el('button','vs-btn',label);b.type='button';b.id=id;controls.append(b);}wrap.append(controls);
- const details=el('details','vs-settings');details.append(el('summary','','Escolher voz e personalidade'));
- const row=el('div','vs-row'),lbl=el('label','','Voz em português brasileiro'),sel=el('select');sel.id='vs-voices';lbl.htmlFor='vs-voices';
- row.append(lbl,sel);const preview=el('button','vs-sample','▶ Ouvir amostra');preview.type='button';preview.id='vs-sample';row.append(preview);
- const info=el('small','','');info.id='vs-voice-info';row.append(info);details.append(row);
- for(const [id,title,min,max] of [['rate','Velocidade',.7,1.4],['pitch','Tom',.7,1.3]]){
-  const line=el('div','vs-row'),titleEl=el('label','',title),range=el('input');range.type='range';range.id='vs-'+id;range.min=String(min);range.max=String(max);range.step='.05';range.value=String(settings[id]);titleEl.htmlFor=range.id;
-  const current=el('output','',String(settings[id]));range.addEventListener('input',()=>{settings[id]=Number(range.value);current.textContent=range.value;save();});line.append(titleEl,range,current);details.append(line);
- }wrap.append(details);
- wrap.append(el('p','vs-disclaimer','Nesta primeira versão, o áudio usa reconhecimento e síntese do navegador. A integração WebSocket da Cloudflare ainda não está ativada.'));
- dlg.append(wrap);document.body.append(dlg);
- x.addEventListener('click',close);
- dlg.addEventListener('cancel',e=>{e.preventDefault();close();});
- $('vs-toggle').addEventListener('click',()=>{if(s.paused){s.paused=false;s.thinking=false;sync();later(150);}else pause();});
- $('vs-interrupt').addEventListener('click',()=>{stopSpeak();s.thinking=false;status('Pode falar.','listening');sync();later(150);});
+ const dlg=make('dialog','vs-dialog');dlg.id='vini-voice-studio';dlg.setAttribute('aria-label','Estúdio de Voz IA OpenAI');
+ const root=make('div','vs-shell'),head=make('header','vs-head'),brand=make('div');
+ brand.append(make('small','','VINI MASTER AI · OPENAI VOICE'),make('h2','','Conversa natural'));
+ const closeBtn=make('button','vs-x','✕');closeBtn.type='button';closeBtn.setAttribute('aria-label','Fechar voz');head.append(brand,closeBtn);root.append(head);
+ const p=make('p','vs-project','Conversa atual');p.id='vs-project';root.append(p);
+ const visual=make('div','vs-visual');visual.id='vs-visual';visual.append(make('div','vs-orbit'),make('div','vs-pulse'),make('div','vs-core'));
+ const label=make('p','vs-mode-label','Esfera neural');label.id='vs-mode-label';visual.append(label);root.append(visual);
+ const st=make('p','vs-status','Pronto');st.id='vs-status';st.setAttribute('role','status');st.setAttribute('aria-live','polite');root.append(st);
+ const heard=make('p','vs-heard','');heard.id='vs-heard';heard.setAttribute('aria-live','polite');root.append(heard);
+ const modes=make('div','vs-modes');
+ for(const [id,txt] of [['orb','Esfera'],['robot','Robô VINI'],['network','Rede neural']]){
+  const b=make('button','vs-mode',txt);b.type='button';b.dataset.vsMode=id;b.addEventListener('click',()=>{settings.mode=id;save();render();});modes.append(b);
+ }root.append(modes);
+ const out=make('div','vs-log');out.id='vs-log';out.setAttribute('aria-label','Transcrição da sessão');out.append(make('p','vs-placeholder','Selecione uma voz e autorize o custo para ouvir respostas naturais de IA.'));root.append(out);
+ const controls=make('div','vs-controls');
+ for(const [id,title] of [['vs-toggle','Pausar'],['vs-interrupt','Interromper'],['vs-end','Encerrar']]){
+  const b=make('button','vs-btn',title);b.id=id;b.type='button';controls.append(b);
+ }root.append(controls);
+ const settingsBox=make('details','vs-settings');settingsBox.open=true;settingsBox.append(make('summary','','Voz OpenAI · selecionar e testar'));
+ const row=make('div','vs-row'),lbl=make('label','','Voz natural');lbl.htmlFor='vs-voices';
+ const sel=make('select');sel.id='vs-voices';row.append(lbl,sel);
+ const preview=make('button','vs-sample','Ouvir amostra OpenAI');preview.id='vs-sample';preview.type='button';row.append(preview);settingsBox.append(row);
+ const line=make('div','vs-row'),rlabel=make('label','','Velocidade');rlabel.htmlFor='vs-rate';
+ const rate=make('input');rate.type='range';rate.min='.8';rate.max='1.25';rate.step='.05';rate.id='vs-rate';line.append(rlabel,rate);settingsBox.append(line);
+ const cons=make('button','vs-consent','Autorizar voz OpenAI (até US$ 0,03 por dia)');cons.type='button';cons.id='vs-consent';
+ settingsBox.append(cons);
+ const inf=make('p','vs-disclaimer','Modelo: openai/tts-1 via Cloudflare AI Gateway. Voz gerada por IA; não é a voz do celular. Requer créditos de AI Gateway. Sem streaming WebSocket ou segundo plano nesta versão.');inf.id='vs-voice-info';
+ settingsBox.append(inf);root.append(settingsBox);dlg.append(root);document.body.append(dlg);
+ closeBtn.addEventListener('click',close);dlg.addEventListener('cancel',e=>{e.preventDefault();close();});
+ $('vs-toggle').addEventListener('click',()=>{if(state.paused){if(!settings.approved){status('Autorize a voz OpenAI antes de retomar.','error');return;}state.paused=false;state.thinking=false;render();schedule(100);}else pause();});
+ $('vs-interrupt').addEventListener('click',()=>{stopAudio();state.thinking=false;render();status('Pode falar novamente.','listening');schedule(100);});
  $('vs-end').addEventListener('click',close);
  sel.addEventListener('change',()=>{settings.voice=sel.value;save();});
- preview.addEventListener('click',()=>speak('Olá! Eu sou o VINI. Qual ideia vamos transformar em projeto hoje?',true));
- populate();if(speechSynthesis)speechSynthesis.onvoiceschanged=populate;sync();
+ rate.addEventListener('input',()=>{settings.rate=Number(rate.value);save();});
+ cons.addEventListener('click',()=>{
+  if(settings.approved){settings.approved=false;save();pause();cons.textContent='Autorizar voz OpenAI (até US$ 0,03 por dia)';return;}
+  if(!confirm('Autorizar geração de voz OpenAI via Cloudflare AI Gateway? Custa US$ 0,000015 por caractere, limitado a 2.000 caracteres (aproximadamente US$ 0,03 de inferência) por dia UTC. Créditos na Cloudflare são necessários.'))return;
+  settings.approved=true;save();cons.textContent='Desativar voz OpenAI';state.paused=false;status('Autorizado. Pode falar.','listening');schedule(150);
+ });
+ preview.addEventListener('click',()=>{
+  if(!settings.approved){status('Primeiro autorize o custo da voz OpenAI abaixo.','error');return;}
+  speak('Olá! Sou o VINI. Agora você pode escolher minha voz natural em português brasileiro.',true);
+ });
+ populate();cons.textContent=settings.approved?'Desativar voz OpenAI':'Autorizar voz OpenAI (até US$ 0,03 por dia)';render();
 }
 function init(){
- make();
- const old=window.jarvisSpeakReply;s.oldSpeak=old;
- window.jarvisSpeakReply=(message)=>{if(!s.active){if(typeof s.oldSpeak==='function')s.oldSpeak(message);return;}if(!s.paused)speak(message);};
+ mount();
+ // Never call the previous browser speechSynthesis implementation automatically.
+ window.jarvisSpeakReply=(text)=>{if(state.active&&!state.paused)speak(text);};
  for(const id of ['jarvis-chat-mic','jarvis-dock-mic']){
-  const b=$(id);if(!b)continue;b.setAttribute('aria-label','Abrir estúdio de voz do VINI');
-  b.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();s.active?close():open();},true);
+  const b=$(id);if(!b)continue;
+  b.setAttribute('aria-label','Abrir Estúdio de Voz IA');
+  b.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();state.active?close():open();},true);
  }
- const button=el('button','vs-open','◉ Voz ao vivo');button.type='button';button.addEventListener('click',open);
- const section=$('section-chat');const actions=section?.querySelector('.vini-chat-actions');
- if(actions)actions.append(button);
- else section?.querySelector('.chat-main-panel')?.append(button);
- window.viniVoice={open,close,pause,status:()=>({active:s.active,paused:s.paused,listening:s.listening,thinking:s.thinking,speaking:s.speaking,engine:'browser-turns'})};
+ const button=make('button','vs-open','◉ Voz de IA');button.type='button';button.addEventListener('click',open);
+ const host=$('section-chat')?.querySelector('.vini-chat-actions');if(host)host.append(button);
+ window.viniVoice={open,close,pause,status:()=>({active:state.active,paused:state.paused,provider:'OpenAI via Cloudflare',deviceSpeech:false,streaming:false})};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
