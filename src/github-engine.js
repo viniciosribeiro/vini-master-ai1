@@ -26,12 +26,12 @@ export async function codeMission(env,jobId,step){
  const team=visual?['supervisor','programador','designer','qa']:['supervisor','programador','qa'];
  const update=async(status,detail,result='')=>{
   await env.DB.prepare('UPDATE code_jobs SET status=?,detail=?,result=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(status,detail,typeof result==='string'?result:JSON.stringify(result),jobId).run();
-  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind(status==='done'?'supervisor':'programador',null,(status==='working'?'Trabalhando: ':status==='done'?'Concluído: ':'Falha: ')+detail.slice(0,250)).run();
+  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind(status==='done'?'supervisor':'programador',jobId,(status==='working'?'Trabalhando: ':status==='done'?'Concluído: ':'Falha: ')+detail.slice(0,250)).run();
  };
  const progress=async(agent,status,detail,output='')=>{
   await env.DB.prepare("UPDATE code_agent_runs SET status=?,detail=?,output=?,started_at=CASE WHEN ?='working' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,finished_at=CASE WHEN ? IN ('done','failed') THEN CURRENT_TIMESTAMP ELSE finished_at END WHERE code_job_id=? AND agent_id=?")
    .bind(status,detail.slice(0,400),String(output||'').slice(0,6000),status,status,jobId,agent).run();
-  await env.DB.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind(agent,detail.slice(0,200)).run();
+  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind(agent,jobId,detail.slice(0,200)).run();
  };
  try{
   await step.do('Preparar equipe de código',async()=>{
