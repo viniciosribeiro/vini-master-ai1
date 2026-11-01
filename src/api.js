@@ -14,7 +14,8 @@ import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
 import {saveGitHub,readGitHub,hasGitHub,verifyGitHub,listGitHubRepos} from './github-engine.js';
 import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
-import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider} from './ai.js';
+import {CF_MODELS,DEFAULT_CF,DEFAULT_NVIDIA,configuredModel,validateModel,paidModel,selectModel} from './model-catalog.js';
+import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider,verifySelectedModel} from './ai.js';
 import {ensureSchema} from './bootstrap.js';
 const respond=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const fail=(message,status=400)=>respond({error:message},status);
@@ -78,7 +79,23 @@ export async function handleAPI(req,env){
    ]);
    return respond({missions:a.results||[],runs:b.results||[],activity:c.results||[],memories:d.results||[],provider:e?.value||'auto',counts:f,codeJobs:g.results||[],codeRuns:h.results||[],hasNvidia:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),hasCloudflare:!!env.AI?.run,agents:AGENTS});
   }
-  if(path==='/api/providers'&&method==='GET')return respond({cloudflare:{configured:!!env.AI?.run,model:env.CF_AI_MODEL||'@cf/zai-org/glm-4.7-flash'},nvidia:{configured:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),model:env.NVIDIA_MODEL||'nvidia/nemotron-3-ultra-550b-a55b'}});
+  if(path==='/api/models'&&method==='GET'){
+   const [cloudflare,nvidia]=await Promise.all([configuredModel(env,'cloudflare'),configuredModel(env,'nvidia')]);
+   return respond({cloudflare:{models:CF_MODELS,selected:cloudflare,configured:!!env.AI?.run},nvidia:{selected:nvidia,configured:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB)},catalogUrl:'https://developers.cloudflare.com/workers-ai/models/',freeNeuronsPerDay:10000});
+  }
+  if((path==='/api/models/test'||path==='/api/models/select')&&method==='POST'){
+   const data=await parse(req),provider=String(data.provider||''),raw=String(data.model||'');
+   let model;try{model=validateModel(provider,raw);}catch(e){return fail(String(e.message||e),400);}
+   if(paidModel(model)&&data.allowPaid!==true)return fail('Esse modelo pode exigir plano pago ou créditos de AI Gateway. Confirme que entende a possibilidade de cobrança antes de testar.',409);
+   try{
+    const probe=await verifySelectedModel(env,provider,model);
+    if(path==='/api/models/test')return respond({...probe,saved:false});
+    await selectModel(env.DB,provider,model);
+    await log(env,'supervisor','Modelo '+provider+' selecionado e testado: '+model);
+    return respond({...probe,saved:true});
+   }catch(e){return fail('Modelo não ativado: '+String(e.message||e).slice(0,250),503);}
+  }
+  if(path==='/api/providers'&&method==='GET')return respond({cloudflare:{configured:!!env.AI?.run,model:await configuredModel(env,'cloudflare')},nvidia:{configured:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),model:await configuredModel(env,'nvidia')}});
   if(path==='/api/providers/test'&&method==='POST'){
    const data=await parse(req);
    if(!['cloudflare','nvidia'].includes(data.provider))return fail('Escolha Cloudflare ou NVIDIA.');
