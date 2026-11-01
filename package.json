@@ -25,6 +25,7 @@
     }
   },
   "dependencies": {
-    "agents": "0.32.0"
+    "agents": "0.32.0",
+    "@cloudflare/voice-elevenlabs": "0.2.0"
   }
 }
