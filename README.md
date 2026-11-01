@@ -1,3 +1,15 @@
+# VINI MASTER AI 0.11.0 — Correções Vercel e login persistente
+
+- Corrigido erro concreto da Cloudflare Workers: fetch de Vercel com redirect: 'error' falhava antes da requisição. Agora usa 'manual' e rejeita HTTP 3xx, sem encaminhar Bearer token a outro host.
+- Login via POST /api/auth/login; MASTER_TOKEN enviado apenas para validar a senha; o servidor retorna cookie "__Host-vini_session" assinado com HMAC-SHA256, Secure, HttpOnly, SameSite=Strict e Path=/.
+- "Manter conectado neste dispositivo" é opt-in na tela (pré-selecionado) e cria sessão por até 30 dias; sem a opção, expiração criptográfica em até 12 h e cookie de sessão. Nenhum MASTER_TOKEN fica salvo em localStorage/sessionStorage. Sessões antigas em sessionStorage são migradas automaticamente uma única vez após validação.
+- Requisições de escrita com cookie exigem Origin idêntico ao site; cabeçalhos Bearer legados continuam temporariamente aceitos para automações e migração. Trocar MASTER_TOKEN revoga todas as sessões.
+- A nova opção "Sair deste dispositivo" apaga o cookie. Projetos, Chat, Histórico, Memória e integrações passam a usar a sessão autenticada sem senha em cada visita.
+- Testes unitários adicionais em tests/session-auth.test.mjs e testes de redirecionamento em tests/vercel-connector.test.mjs.
+- A conexão Vercel anterior falhou antes de validar a API, portanto o usuário precisará colar o token uma vez após esta correção e tocar em "Validar e conectar Vercel". O token então será armazenado cifrado no banco D1.
+- Ainda não se deve anunciar que a Vercel foi conectada ou rebuild executado sem uma chamada autenticada e resposta real da plataforma.
+
+
 # VINI MASTER AI 0.10.0 — Conectar Vercel e executar builds de prévia reais
 
 Nesta versão, falas como "vou forçar um build" não são aceitas como execução. O VINI redireciona à opção executável, sem texto longo: conectar Vercel na página Configurações, identificar o projeto/deployment real, confirmar e acompanhar o ID.
