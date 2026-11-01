@@ -39,13 +39,32 @@ test('Navigation still exposes agents and office on mobile',()=>{
  assert.match(css,/\.sidebar \.nav\[data-section="agents"\]\{display:flex!important\}/);
 });
 test('Old PWA cache cannot keep previous broken reference styles',()=>{
- assert.match(sw,/vini-master-shell-v21/);
- assert.match(html,/vini-reference\.js\?v=21/);
+ assert.match(sw,/vini-master-shell-v22/);
+ assert.match(html,/vini-reference\.js\?v=22/);
  assert.match(html,/vini-reference\.css\?v=21/);
- assert.match(html,/Control Center R3 0\.17\.3/);
- assert.match(worker,/version:'0\.17\.3'/);
+ assert.match(html,/Control Center R3 0\.17\.4/);
+ assert.match(worker,/version:'0\.17\.4'/);
 });
 test('No destructive data or secret change in visual rollback',()=>{
  assert.match(worker,/officeAgentsRestored:true/);
  assert.ok(!/localStorage\.clear|indexedDB\.deleteDatabase|deleteAllCaches/.test(js));
+});
+
+test('Agents navigation label stays explicitly visible after all scripts run',()=>{
+ const base=load('public/vini-control.js');
+ assert.match(base,/label\.textContent='Agentes'/);
+ assert.match(js,/program\.textContent='Agentes'/);
+ assert.match(html,/data-section="agents"><span>Agentes<\/span>/);
+ assert.doesNotMatch(base,/label\.textContent='Rede Neural'/);
+ assert.doesNotMatch(js,/program\.textContent='Rede Neural'/);
+});
+test('Voice launcher stays in chat actions instead of shifting the entire conversation panel',()=>{
+ const voice=load('public/vini-voice-live.js');
+ const voiceCss=load('public/vini-voice-live.css');
+ assert.match(voice,/querySelector\('\.vini-chat-actions'\)/);
+ assert.match(voice,/actions\.append\(button\)/);
+ assert.doesNotMatch(voice,/section\.prepend\(button\)/);
+ assert.match(voiceCss,/\.vini-chat-actions\{display:flex;flex-wrap:wrap;/);
+ assert.match(html,/vini-voice-live\.js\?v=22/);
+ assert.match(html,/vini-voice-live\.css\?v=22/);
 });

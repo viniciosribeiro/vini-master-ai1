@@ -129,7 +129,9 @@ function init(){
   b.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();s.active?close():open();},true);
  }
  const button=el('button','vs-open','◉ Voz ao vivo');button.type='button';button.addEventListener('click',open);
- const section=$('section-chat');if(section)section.prepend(button);
+ const section=$('section-chat');const actions=section?.querySelector('.vini-chat-actions');
+ if(actions)actions.append(button);
+ else section?.querySelector('.chat-main-panel')?.append(button);
  window.viniVoice={open,close,pause,status:()=>({active:s.active,paused:s.paused,listening:s.listening,thinking:s.thinking,speaking:s.speaking,engine:'browser-turns'})};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

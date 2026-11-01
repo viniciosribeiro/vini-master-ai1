@@ -7,12 +7,12 @@ const js=read('public/vini-voice-live.js'),css=read('public/vini-voice-live.css'
 const html=read('public/index.html'),sw=read('public/sw.js'),worker=read('src/index.js');
 test('Voice Studio frontend parses without external dependencies',()=>assert.doesNotThrow(()=>new Script(js)));
 test('voice studio is loaded after existing D1-chat integration',()=>{
- assert.ok(html.indexOf('vini-voice-live.js?v=18')>html.indexOf('jarvis.js?v=33'));
- assert.ok(html.indexOf('vini-voice-live.css?v=18')>html.indexOf('vini-reference.css?v=17'));
- assert.match(worker,/version:'0\.17\.0'/);
+ assert.ok(html.indexOf('vini-voice-live.js?v=22')>html.indexOf('jarvis.js?v=33'));
+ assert.ok(html.indexOf('vini-voice-live.css?v=22')>html.indexOf('vini-reference.css?v=21'));
+ assert.match(worker,/version:'0\.17\.4'/);
 });
 test('PWA caches new voice UI assets with new cache generation',()=>{
- assert.match(sw,/vini-master-shell-v18/);
+ assert.match(sw,/vini-master-shell-v22/);
  assert.match(sw,/vini-voice-live\.js/);assert.match(sw,/vini-voice-live\.css/);
 });
 test('Brazilian voice picker and settings are real browser APIs',()=>{

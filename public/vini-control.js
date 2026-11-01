@@ -53,7 +53,7 @@ function openAgent(id){
 function decorateNavigation(){
  document.body.classList.add('vini-control-r1');
  const nav=document.querySelector('.sidebar .nav[data-section="agents"]');
- if(nav){const label=nav.querySelector('span');if(label)label.textContent='Rede Neural';nav.setAttribute('aria-label','Rede Neural e especialistas');}
+ if(nav){const label=nav.querySelector('span');if(label)label.textContent='Agentes';nav.setAttribute('aria-label','Agentes e rede neural');}
  const logo=document.querySelector('.sidebar .logo');if(logo)logo.textContent='V';
  const top=document.querySelector('.top .subhead');if(top)top.textContent='Orquestração de agentes · Dados reais';
  const gear=make('button','icon-btn','⚙');gear.id='vc-settings-button';gear.type='button';gear.setAttribute('aria-label','Abrir configurações');
