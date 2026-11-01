@@ -181,3 +181,7 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 #section-office .station:focus-visible{outline:3px solid #45ddff!important;outline-offset:3px}
 #section-office .vc-office-center{visibility:visible!important}
 @media(max-width:780px){.vr-scene-details .vr-office-scene{min-height:260px!important;max-height:370px}.vc-office-center{min-height:120px!important}.vc-office-grid .vc-agent-col{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+
+/* Mobile ordering: central supervisor first, then all five specialist cards. */
+@media(max-width:780px){#section-office .vc-office-grid{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:10px!important}#section-office .vc-office-center{order:0!important;grid-row:auto!important}#section-office #vc-office-left{order:1!important}#section-office #vc-office-right{order:2!important}#section-office .vc-office-grid .vc-agent-col{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}#section-office .vc-agent-card{min-width:0!important}}
+@media(max-width:360px){#section-office .vc-office-grid .vc-agent-col{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
