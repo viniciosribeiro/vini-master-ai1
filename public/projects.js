@@ -41,10 +41,32 @@ function renderPortfolio(){
   parent.append(card);
  }
 }
+const deploymentChecks=new Map();
+async function autoCheckDeploy(id){
+ if(!githubReady)return;
+ const selected=portfolio.find(p=>p.id===id);
+ if(!selected?.repo)return;
+ const last=deploymentChecks.get(id)||0;
+ if(Date.now()-last<5*60*1000)return;
+ deploymentChecks.set(id,Date.now());
+ try{
+  const data=await api('/projects/'+id+'/deployments',{method:'POST',body:{}});
+  if(data.project){
+   const at=portfolio.findIndex(p=>p.id===id);
+   if(at>=0)portfolio[at]=data.project;
+   if(selectedProject?.id===id){selectedProject=data.project;renderDeploymentLinks();}
+   renderPortfolio();
+  }
+ }catch(err){
+  const status=pj('deploy-check-status');
+  if(selectedProject?.id===id&&status)status.textContent='Sincronização automática indisponível: '+err.message;
+ }
+}
 async function selectProject(id){
  selectedProject=portfolio.find(x=>x.id===id)||null;
  if(!selectedProject)return;
  renderSelectedProject();await loadProjectJobs();
+ void autoCheckDeploy(id);
  pj('project-workspace').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function deployAnchor(url,title,source){
