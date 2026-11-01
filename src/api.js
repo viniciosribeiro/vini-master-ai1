@@ -3,6 +3,7 @@ import {readExecutionLedger} from './execution-ledger.js';
 import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVercelProjects,getVercelDeployments,initiatePreviewRedeploy,vercelDeploymentStatus} from './vercel-connector.js';
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {isWorkStatusConcern,readWorkStatus,workStatusReply} from './work-status.js';
+import {listThreads,createThread,getThread,chooseThread,updateThread,removeThread,getThreadMessages,saveThreadMessage,chatTitle} from './chat-threads.js';
 import {readLiveEvents} from './live-events.js';
 import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
 import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
@@ -28,10 +29,12 @@ async function parse(req){
 async function log(env,agent,description,mission=null){
  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind(agent,mission,String(description).slice(0,350)).run();
 }
-async function recall(env,content){
+async function recall(env,content,threadId=null,projectId=null){
  const query=searchTerms(content);if(!query)return [];
  try{
-  const r=await env.DB.prepare('SELECT m.id,m.role,m.content,m.created_at FROM messages_fts JOIN messages m ON messages_fts.rowid=m.id WHERE messages_fts MATCH ? ORDER BY m.id DESC LIMIT 10').bind(query).all();
+  const scoped=threadId||projectId;
+  const q=scoped?'SELECT m.id,m.role,m.content,m.created_at FROM messages_fts JOIN messages m ON messages_fts.rowid=m.id JOIN chat_threads t ON t.id=m.thread_id WHERE messages_fts MATCH ? AND (m.thread_id=? OR (? IS NOT NULL AND t.project_id=? AND t.status<>\'trashed\')) ORDER BY m.id DESC LIMIT 10':'SELECT m.id,m.role,m.content,m.created_at FROM messages_fts JOIN messages m ON messages_fts.rowid=m.id WHERE messages_fts MATCH ? ORDER BY m.id DESC LIMIT 10';
+  const r=await env.DB.prepare(q).bind(...(scoped?[query,threadId||'',projectId||null,projectId||null]:[query])).all();
   return r.results||[];
  }catch{return [];}
 }
@@ -55,7 +58,8 @@ export async function handleAPI(req,env){
   await ensureSchema(env.DB);
   if(path==='/api/intake'&&method==='GET'){
    await setupIntakes(env.DB);
-   const item=await env.DB.prepare("SELECT id,step FROM project_intakes WHERE status='collecting' ORDER BY created_at DESC LIMIT 1").first();
+   const tid=url.searchParams.get('threadId')||'';
+   const item=tid?await env.DB.prepare("SELECT id,step FROM project_intakes WHERE status='collecting' AND thread_id=? ORDER BY created_at DESC LIMIT 1").bind(tid).first():null;
    return respond({active:!!item,step:item?item.step+1:null,total:5});
   }
   if(path==='/api/live'&&method==='GET')return respond(await readLiveEvents(env.DB,{after:url.searchParams.get('after'),limit:url.searchParams.get('limit')}));
@@ -292,26 +296,53 @@ export async function handleAPI(req,env){
     return respond({jobs:result.results||[]});
    }
   }
+  if(path==='/api/threads'&&method==='GET'){
+   try{return respond({threads:await listThreads(env.DB,{search:url.searchParams.get('q')||'',projectId:url.searchParams.get('projectId')||'',status:url.searchParams.get('status')||'active'})});}
+   catch(e){return fail(String(e.message||e),400);}
+  }
+  if(path==='/api/threads'&&method==='POST'){
+   try{const data=await parse(req);return respond({thread:await createThread(env.DB,{projectId:data.projectId||null,title:data.title||'',draft:data.draft===true})},201);}
+   catch(e){return fail(String(e.message||e),400);}
+  }
+  if(path.startsWith('/api/threads/')&&path.endsWith('/messages')&&method==='GET'){
+   const id=path.slice('/api/threads/'.length,-'/messages'.length);
+   try{return respond(await getThreadMessages(env.DB,id,{before:url.searchParams.get('before'),limit:url.searchParams.get('limit')}));}
+   catch(e){return fail(String(e.message||e),404);}
+  }
+  if(path.startsWith('/api/threads/')&&!path.endsWith('/messages')){
+   const id=path.slice('/api/threads/'.length);
+   if(method==='GET'){const thread=await getThread(env.DB,id);return thread?respond({thread}):fail('Conversa não encontrada.',404);}
+   if(method==='PATCH'){
+    try{const patch=await parse(req);return respond({thread:await updateThread(env.DB,id,patch)});}
+    catch(e){return fail(String(e.message||e),400);}
+   }
+   if(method==='DELETE'){
+    try{return respond(await removeThread(env.DB,id,{permanent:url.searchParams.get('permanent')==='true'}));}
+    catch(e){return fail(String(e.message||e),400);}
+   }
+  }
   if(path==='/api/conversation'&&method==='GET'){
-   const limit=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||60));
-   const before=Math.max(0,Number(url.searchParams.get('before'))||0);
-   const statement=before?'SELECT * FROM messages WHERE id<? ORDER BY id DESC LIMIT ?':'SELECT * FROM messages ORDER BY id DESC LIMIT ?';
-   const s=env.DB.prepare(statement);
-   const r=await (before?s.bind(before,limit):s.bind(limit)).all();
-   const records=r.results||[];
-   return respond({messages:records.reverse(),olderCursor:records.length===limit?records[0]?.id:null});
+   const threadId=url.searchParams.get('threadId')||'';
+   if(!threadId)return fail('Selecione uma conversa para ver o histórico.',400);
+   try{return respond(await getThreadMessages(env.DB,threadId,{before:url.searchParams.get('before'),limit:url.searchParams.get('limit')}));}
+   catch(e){return fail(String(e.message||e),404);}
   }
   if(path==='/api/search'&&method==='GET')return respond({results:await recall(env,(url.searchParams.get('q')||'').slice(0,120))});
   if(path==='/api/chat'&&method==='POST'){
    const data=await parse(req);const message=String(data.message||'').trim().slice(0,MAX_MESSAGE);
    if(!message)return fail('Escreva sua mensagem.');
+   const thread=await chooseThread(env.DB,String(data.threadId||''));
+   if(!thread.project_id&&!thread.is_draft&&thread.id==='legacy-history')return fail('Vincule o histórico anterior a um projeto antes de continuar.',409);
+   const threadId=thread.id;
+   const first=await env.DB.prepare('SELECT COUNT(*) AS n FROM messages WHERE thread_id=?').bind(threadId).first();
+   if(Number(first?.n||0)===0&&/^nova conversa$/i.test(thread.title))await env.DB.prepare('UPDATE chat_threads SET title=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(chatTitle(message),threadId).run();
    const current=await env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first();
    const provider=normalizeProvider(data.provider||current?.value||'auto');
-   await env.DB.prepare("INSERT INTO messages(role,content) VALUES('user',?)").bind(message).run();
+   await saveThreadMessage(env.DB,threadId,'user',message);
    await setupIntakes(env.DB);
-   const interview=await handleIntake(env,message,provider);
+   const interview=await handleIntake(env,message,provider,threadId);
    if(interview){
-    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(interview.reply).run();
+    await saveThreadMessage(env.DB,threadId,'assistant',interview.reply,'system');
     await log(env,'supervisor',interview.intake?.status==='started'?'Projeto criado após entrevista':'Entrevista de projeto: pergunta em andamento');
     return respond({...interview,provider:null,model:null,execution:{kind:interview.intake?.status==='started'?'project_catalog':'conversation',status:interview.intake?.status==='started'?'saved':'answered',id:interview.project?.id||null,externalWorkConfirmed:false,proofUrl:null}});
    }
@@ -320,7 +351,7 @@ export async function handleAPI(req,env){
     const reply=connection?
      'Ainda não iniciei esse build. A Vercel está conectada, mas preciso que você selecione o projeto e o deployment exatos. Toque em **Escolher projeto Vercel** para iniciar uma prévia real e acompanhar seu ID.':
      'Ainda não iniciei esse build. Falta conectar sua conta Vercel ao VINI. Toque em **Conectar Vercel** uma vez; depois você poderá escolher o projeto e disparar uma prévia real.';
-    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(reply).run();
+    await saveThreadMessage(env.DB,threadId,'assistant',reply,'system');
     await log(env,'supervisor','Build solicitado, mas não disparado: '+(connection?'aguardando seleção do projeto':'Vercel não conectada'));
     return respond({reply,provider:null,model:null,actionRequired:connection?'vercel_choose':'vercel_setup',execution:{kind:'blocked',status:'not_executed',id:null,externalWorkConfirmed:false,proofUrl:null,reason:connection?'select_project':'connect_vercel'}});
    }
@@ -333,7 +364,7 @@ export async function handleAPI(req,env){
    // Launch real agents for actionable project instructions, not for ordinary conversation.
    let taskInput=!saved&&routeWorkIntent(message)?message:null;
    if(!saved&&!taskInput&&/^(?:fa[cç]a tudo|pode fazer|faz isso|pode executar|execute agora|pode iniciar|inicie agora|pode come[cç]ar|continue com isso)\s*[.!]?$/iu.test(message)){
-    const recent=await env.DB.prepare("SELECT role,content FROM messages WHERE id < (SELECT MAX(id) FROM messages) ORDER BY id DESC LIMIT 5").all();
+    const recent=await env.DB.prepare("SELECT role,content FROM messages WHERE thread_id=? AND id < (SELECT MAX(id) FROM messages WHERE thread_id=?) ORDER BY id DESC LIMIT 5").bind(threadId,threadId).all();
     const items=recent.results||[],priorUser=items.find(x=>x.role==='user')?.content,priorAssistant=items.find(x=>x.role==='assistant')?.content;
     taskInput=resolvedFollowUp(message,priorUser,priorAssistant);
    }
@@ -341,24 +372,24 @@ export async function handleAPI(req,env){
     const available=await listProjects(env.DB);
     const delegation=await delegateChatWork(env,taskInput,provider,available);
     if(delegation){
-     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(delegation.reply).run();
+     await saveThreadMessage(env.DB,threadId,'assistant',delegation.reply,'system');
      return respond({...delegation,provider:null,model:null,execution:executionReceipt(delegation)});
     }
    }
    if(!saved&&isWorkStatusConcern(message)){
     const facts=await readWorkStatus(env.DB);
     const reply=workStatusReply(facts);
-    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(reply).run();
+    await saveThreadMessage(env.DB,threadId,'assistant',reply,'system');
     return respond({reply,provider:null,model:null,workStatus:facts,actionRequired:'work_status',execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null}});
    }
    const [past,pinned,relevant,projects,decisions,profile,verifiedDeployments]=await Promise.all([
-    env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 18').all(),
+    env.DB.prepare('SELECT role,content FROM messages WHERE thread_id=? ORDER BY id DESC LIMIT 18').bind(threadId).all(),
     env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 60').all(),
-    recall(env,message),
-    env.DB.prepare("SELECT name,description,platform,repo FROM projects WHERE status='active' ORDER BY updated_at DESC LIMIT 20").all(),
-    env.DB.prepare("SELECT action,description FROM project_events ORDER BY id DESC LIMIT 25").all(),
+    recall(env,message,threadId,thread.project_id),
+    env.DB.prepare("SELECT name,description,platform,repo FROM projects WHERE id=? LIMIT 1").bind(thread.project_id||'').all(),
+    env.DB.prepare("SELECT action,description FROM project_events WHERE project_id=? ORDER BY id DESC LIMIT 25").bind(thread.project_id||'').all(),
     readProfile(env.DB),
-    env.DB.prepare("SELECT name,deploy_url,deploy_status,deploy_verified_at,preview_url,preview_status,preview_verified_at FROM projects WHERE status='active' AND (deploy_status='online' OR preview_status='online') ORDER BY updated_at DESC LIMIT 15").all()
+    env.DB.prepare("SELECT name,deploy_url,deploy_status,deploy_verified_at,preview_url,preview_status,preview_verified_at FROM projects WHERE id=? AND (deploy_status='online' OR preview_status='online') ORDER BY updated_at DESC LIMIT 15").bind(thread.project_id||'').all()
    ]);
    const context=(pinned.results||[]).map(x=>'- '+x.content.slice(0,600)).join('\n').slice(0,8000);
    const old=relevant.filter(x=>x.content!==message).map(x=>'- '+x.content.slice(0,500)).join('\n').slice(0,5000);
@@ -373,7 +404,7 @@ export async function handleAPI(req,env){
     const answer=await callAI(env,[{role:'system',content:system+deployRules},...history],provider);
     const protectedAnswer=guardUnsupportedActionClaims(answer.text);
     const safeReply=guardChatDeployment(protectedAnswer.text,verifiedSites);
-    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,?)").bind(safeReply,answer.provider).run();
+    await saveThreadMessage(env.DB,threadId,'assistant',safeReply,answer.provider);
     await log(env,'supervisor','Respondeu à conversa via '+answer.provider);
     return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved,execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null},claimBlocked:protectedAnswer.intercepted,actionRequired:null});
    }catch(e){return fail(String(e.message||e),503);}
@@ -421,7 +452,7 @@ export async function handleAPI(req,env){
   }
   if(path==='/api/export'&&method==='GET'){
    const [a,b,c]=await Promise.all([env.DB.prepare('SELECT * FROM messages ORDER BY id').all(),env.DB.prepare('SELECT * FROM memories').all(),env.DB.prepare('SELECT * FROM missions').all()]);
-   return respond({exportedAt:new Date().toISOString(),messages:a.results,memories:b.results,missions:c.results});
+   return respond({exportedAt:new Date().toISOString(),messages:a.results,memories:b.results,missions:c.results,threads:await listThreads(env.DB,{status:'all'})});
   }
   if(path==='/api/conversation'&&method==='DELETE'){
    const d=await parse(req);if(d.confirm!=='APAGAR')return fail('Confirmação incorreta.');
