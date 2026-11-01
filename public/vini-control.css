@@ -188,3 +188,18 @@ body:before{background:radial-gradient(ellipse at 50% 0,#12326b94,transparent 50
 }
 @media(max-width:420px){.vc-stat-top{font-size:10px}.vc-agent-strip{grid-template-columns:repeat(3,minmax(0,1fr))}.vc-agent-tile{padding:9px 2px}.vc-header h1{font-size:26px!important}.vc-pill{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.vc-flowstep[data-state="working"]:before,.vc-network-link.active{animation:none!important}.vc-agent-card{transition:none!important}}
+
+/* Agent colors are stylesheet-only so the strict CSP never requires inline styles. */
+.vc-agent-card[data-agent="programador"] .vc-agent-face,.vc-agent-tile[data-agent="programador"] .vc-agent-face{--agent-color:#2ce0ff}
+.vc-agent-card[data-agent="designer"] .vc-agent-face,.vc-agent-tile[data-agent="designer"] .vc-agent-face{--agent-color:#fc6dff}
+.vc-agent-card[data-agent="qa"] .vc-agent-face,.vc-agent-tile[data-agent="qa"] .vc-agent-face{--agent-color:#35eab0}
+.vc-agent-card[data-agent="infra"] .vc-agent-face,.vc-agent-tile[data-agent="infra"] .vc-agent-face{--agent-color:#a97eff}
+.vc-agent-card[data-agent="pesquisa"] .vc-agent-face,.vc-agent-tile[data-agent="pesquisa"] .vc-agent-face{--agent-color:#ffbc56}
+.vc-agent-card[data-agent="supervisor"] .vc-agent-face,.vc-agent-tile[data-agent="supervisor"] .vc-agent-face{--agent-color:#24eff7}
+.vc-project-create-actions{margin-bottom:10px}
+.vc-mission-mode-actions{margin-bottom:11px}
+.vc-block-subtitle{display:block}
+.vc-mission-project-label{display:flex;flex-direction:column;gap:6px;margin:10px 0;color:#c7e0ee;font-size:12px}
+.vc-mission-project-label select{min-height:43px;padding:8px 11px;border-radius:13px}
+#vc-current-progress{width:0}
+.vc-favorite{cursor:pointer}
