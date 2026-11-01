@@ -16,6 +16,7 @@ const escId=id=>String(id||'').replace(/[^a-zA-Z0-9_-]/g,'');
 const recent=(date,minutes=30)=>{const raw=String(date||'').replace(' ','T');const t=Date.parse(/[zZ]$|[+-]\d\d:\d\d$/.test(raw)?raw:raw+'Z');return Number.isFinite(t)&&Math.abs(Date.now()-t)<=minutes*60000;};
 const live=()=>typeof state!=='undefined'&&state&&typeof state==='object'?state:{missions:[],runs:[],activity:[],agents:[],codeJobs:[],codeRuns:[]};
 const authenticated=()=>typeof authValidated!=='undefined'&&authValidated;
+let projectListRequested=false;
 const shell=(id,markup)=>{const root=make('div','vc-control-root');root.id=id;root.innerHTML=markup;return root;};
 const num=n=>String(Number(n)||0);
 const normalizeStatus=s=>s==='done'||s==='completed'?'done':s==='working'||s==='running'?'working':s==='failed'?'failed':s==='queued'?'queued':'idle';
@@ -57,6 +58,10 @@ function decorateNavigation(){
  const top=document.querySelector('.top .subhead');if(top)top.textContent='Orquestração de agentes · Dados reais';
  const gear=make('button','icon-btn','⚙');gear.id='vc-settings-button';gear.type='button';gear.setAttribute('aria-label','Abrir configurações');
  gear.addEventListener('click',()=>show('settings'));
+ const topPicker=make('select','vc-top-project');topPicker.id='vc-top-project';topPicker.setAttribute('aria-label','Projeto em foco');
+ const option=make('option','','Todos os projetos');option.value='';topPicker.append(option);
+ topPicker.addEventListener('change',()=>{sessionStorage.setItem('vc_top_project',topPicker.value);const missions=by('vc-mission-project');if(missions&&[...missions.options].some(x=>x.value===topPicker.value))missions.value=topPicker.value;});
+ by('open-access')?.insertAdjacentElement('beforebegin',topPicker);
  by('open-access')?.insertAdjacentElement('afterend',gear);
  const sidefoot=document.querySelector('.side-foot small');if(sidefoot)sidefoot.textContent='Cloudflare · Execução auditável';
  document.querySelectorAll('.sidebar .nav').forEach(b=>b.addEventListener('click',()=>{document.body.dataset.vcSection=b.dataset.section||'';}));
@@ -259,6 +264,12 @@ function updateProjectsSelect(){
  const all=typeof portfolio!=='undefined'&&Array.isArray(portfolio)?portfolio:[];
  const current=sel.value,keys=new Set([...sel.options].map(x=>x.value));
  const active=all.filter(x=>x.status==='active');
+ const picker=by('vc-top-project');
+ if(picker){const currentId=picker.value||sessionStorage.getItem('vc_top_project')||'';
+   picker.replaceChildren();const defaultOption=make('option','','Todos os projetos');defaultOption.value='';picker.append(defaultOption);
+   for(const p of active){const opt=make('option','',p.name);opt.value=p.id;picker.append(opt);}
+   if(active.some(p=>p.id===currentId))picker.value=currentId;
+ }
  if(keys.size===active.length+1&&active.every(x=>keys.has(x.id)))return;
  sel.replaceChildren();const head=make('option','','Missão geral · sem projeto');head.value='';sel.append(head);
  for(const p of active){const op=make('option','',p.name);op.value=p.id;sel.append(op);}
@@ -270,7 +281,9 @@ function paint(){
  const activeM=missions.filter(x=>x.status==='running').length;
  const activeJ=jobs.filter(x=>x.status==='working').length;
  const working=AGENTS.filter(x=>agentStatus(data,x.id)==='working');
- const current=missions.find(x=>x.status==='running')||missions.find(x=>x.status==='queued')||missions[0];
+ const focusId=by('vc-top-project')?.value||'';
+ const scoped=focusId?missions.filter(x=>x.project_id===focusId):missions;
+ const current=scoped.find(x=>x.status==='running')||scoped.find(x=>x.status==='queued')||scoped[0];
  const missionRuns=current?runs.filter(x=>x.mission_id===current.id):[];
  setText('vc-office-current',current?current.title+' · '+statusLabel(normalizeStatus(current.status)):'Nenhuma missão registrada');
  setText('vc-office-counter',working.length+' agente(s) executando agora · '+(activeM+activeJ)+' tarefa(s) em andamento');
@@ -324,7 +337,7 @@ function syncCounts(){
 }
 function boot(){
  decorateNavigation();buildOffice();buildProjects();buildMissions();buildNetwork();buildChat();buildMemory();buildSettings();
- setInterval(()=>{if(authenticated())paint();},2700);
+ setInterval(()=>{if(authenticated()){if(!projectListRequested&&typeof loadProjects==='function'){projectListRequested=true;void loadProjects().catch(()=>{});}paint();}},2700);
  setInterval(()=>{if(authenticated()&&!document.hidden)syncCounts();},60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){paint();syncCounts();}});
  document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>{requestAnimationFrame(paint);if(x.dataset.section==='memory')syncCounts();if(x.dataset.section==='missions'&&typeof loadProjects==='function')void loadProjects().catch(()=>{});}));
