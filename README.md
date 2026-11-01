@@ -1,44 +1,53 @@
-# VINI MASTER AI — Alpha 0.2.1
+# VINI MASTER AI — Alpha 0.3 | Projetos e automações
 
-Central visual de agentes de IA para a Cloudflare, desenvolvida com Workers, Workers AI, Workflows e banco D1.
+**Aplicação publicada:** https://vini-master-ai1.viniciosribeiro.workers.dev/
 
-**[Implantar com Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/viniciosribeiro/vini-master-ai)** · [Passos e segurança](DEPLOY-CLOUDFLARE.md)
+## O que funciona no código atual
 
-## Funcionalidades
+- Interface mobile de escritório virtual e equipe de seis agentes.
+- Conversa pelo Cloudflare Workers AI (NVIDIA opcional via conexão própria).
+- Histórico pesquisável e memórias explícitas no Cloudflare D1.
+- **Projetos:** criar, editar informações, renomear no painel, arquivar, enviar para lixeira, restaurar e apagar definitivamente o registro do painel.
+- **GitHub:** conexão autorizada via token restrito, cifrado em repouso no D1; importar os repositórios acessíveis e sincronizar novos automaticamente.
+- **Programação:** missão de código gera até três arquivos dentro de um escopo permitido e abre uma branch + **PR em rascunho** no repositório GitHub vinculado. O resultado e os erros aparecem no painel. Não executa merge.
+- **Ideias:** análise sob demanda e revisão periódica de projetos com sugestões e alertas no painel.
+- **Perfil de trabalho:** síntese semanal das conversas do usuário e dos projetos, editável ou apagável. Não treina pesos dos modelos.
+- Cron diário às 12h UTC: importa novos repositórios (quando autorizado) e analisa um projeto ativo, evitando reanalisar o mesmo projeto em menos de sete dias.
+- Cron semanal segunda-feira às 11h UTC: atualiza o perfil de trabalho.
 
-- Painel responsivo com escritório virtual isométrico, seis estações selecionáveis e indicadores baseados em registros reais.
-- Chat do supervisor com **Cloudflare Workers AI** e opção de **NVIDIA NIM**.
-- Missões duráveis via Workflows: supervisor planeja, cinco especialistas analisam sequencialmente e supervisor consolida.
-- Histórico de mensagens no D1, índice FTS5 de busca por termos, memórias fixadas e comando **lembre que...**.
-- Pesquisa de conversas, exportação JSON de dados principais e exclusão de mensagens/memórias selecionadas.
-- Proteção de API pelo segredo **MASTER_TOKEN**; sem segredo válido, chat e memória ficam bloqueados.
-- Limite inicial de três novas missões por dia para reduzir consumo de cotas.
+## Como usar pelo celular
 
-## Começar
+1. Acesse o aplicativo e entre com **MASTER_TOKEN** no cadeado. Nunca envie esse segredo pelo chat.
+2. Abra **Projetos** para criar e administrar seu portfólio.
+3. Em **Configurações**, conecte o GitHub uma vez com um token fine-grained limitado aos repositórios desejados, com permissão **Contents: Read/Write** e **Pull requests: Read/Write**.
+4. A conexão valida acesso de escrita e importa os repositórios acessíveis. O token fica cifrado no banco D1.
+5. Abra o projeto importado, descreva o código que deseja e clique em **Delegar código ao Programador**.
+6. O resultado é uma URL de PR no GitHub, não uma publicação em produção. A integração GitHub ↔ Cloudflare/Vercel de cada projeto pode produzir builds/previews se já estiver configurada.
+7. Revise ideias em **Projetos** e ajuste seu perfil em **Memórias**.
 
-1. Clique em [Implantar com Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/viniciosribeiro/vini-master-ai).
-2. Configure o segredo obrigatório **MASTER_TOKEN** com uma chave longa e exclusiva (40+ caracteres).
-3. Aguarde a Cloudflare concluir e abra o endereço workers.dev que ela apresentar.
-4. Clique no cadeado 🔐 na interface, informe o mesmo segredo e use o chat.
-5. Para conectar a NVIDIA, abra Configurações → Inteligências artificiais, informe a sua chave no formulário e clique em Validar e conectar. A chave é verificada por uma chamada real e armazenada cifrada no D1. NVIDIA_API_KEY como secret Cloudflare continua sendo alternativa opcional.
+## Limites e segurança
 
-**Atenção:** não há confirmação de deploy real até a Cloudflare gerar e testar o endereço. O código não permite alterar repositórios, executar software externo ou publicar aplicações: os agentes geram análises e relatórios. O histórico começa com as conversas feitas neste aplicativo; não importa automaticamente chats anteriores do ChatGPT.
+- Ao renomear, arquivar ou excluir um projeto **no painel**, isso altera apenas seu cadastro no D1. Não deleta nem renomeia o GitHub, os Workers ou as aplicações Vercel.
+- A exclusão no painel passa pela lixeira; exclusão definitiva exige confirmação textual explícita.
+- Os agentes **não executam código gerado em ambiente isolado**, não verificam testes E2E e não fazem merge/deploy automático do PR. As verificações são estáticas e limitadas.
+- Use o PR como proposta de alteração e habilite testes/builds e prévias isoladas antes de qualquer merge. **Nunca vincule os segredos de produção a builds de código não confiável.**
+- A integração direta GitHub ↔ Cloudflare Workers Builds publica alterações na branch configurada; não depende de GitHub Actions.
+- O sistema lembra conversas feitas **dentro do VINI MASTER AI**. Não importa automaticamente as conversas anteriores do aplicativo ChatGPT.
+- Sugestões periódicas são produzidas a partir dos dados e modelos disponíveis, não de pesquisa atualizada na internet.
+- Alertas são **dentro do aplicativo**; notificações push, email e WhatsApp ainda não foram implementadas.
+- Todas as funcionalidades estão sujeitas às cotas gratuitas e limites de NVIDIA, Workers AI, D1, Workflows e GitHub.
 
-## Estrutura
+## Validação
 
-`public/`: interface responsiva; `src/`: API, modelos, memória e Workflows; `wrangler.jsonc`: recursos Cloudflare; `tests/`: verificações de lógica e segurança; `DEPLOY-CLOUDFLARE.md`: guia.
+- Sintaxe dos módulos novos e 13 verificações funcionais locais de validação de projeto, escopo de arquivos e lixeira passaram.
+- A página e os novos recursos de interface foram verificados como publicados no endereço Cloudflare.
+- /api/health reportou bindings de Workers AI e D1 presentes e autenticação configurada.
+- /api/projects e /api/profile retornaram 401 quando consultados sem MASTER_TOKEN, como esperado.
+- **Ainda falta um teste autenticado ponta a ponta** do banco D1, dos modelos, do GitHub autorizado e de uma missão criando PR. Sem o token privado do painel e autorização GitHub interna do aplicativo, não é correto afirmar que essas etapas passaram.
 
-## Privacidade
+## Referências
 
-O repositório de origem é **público**, mas não contém chaves nem conversas. Históricos são armazenados no D1 da conta que fizer o deploy, não no GitHub. Quando NVIDIA é selecionada, o contexto das mensagens necessário à resposta é enviado à NVIDIA. Não cole credenciais no chat.
-
-Os provedores possuem cotas e regras próprias; a disponibilidade gratuita não é ilimitada.
-
-
-## Diagnóstico de IA (atualização de 1º novembro de 2026)
-- Endpoint de saúde sem dados privados: `GET /api/health`, mostra se o binding `AI`, D1 e `MASTER_TOKEN` estão presentes.
-- Cloudflare Workers AI funciona sem chave externa: `ai.binding=AI` no `wrangler.jsonc`.
-- NVIDIA pode ser conectada via Configurações; antes de armazenar a chave o backend executa um teste real. Nunca envie chave no chat ou no GitHub.
-- O segredo é cifrado (AES-GCM com chave derivada via HKDF de `MASTER_TOKEN`) no D1. Se o MASTER_TOKEN mudar, reconecte a NVIDIA.
-- Diagnóstico atual do ambiente público: `cloudflareAI=true`, `d1=true`, `accessConfigured=false`. Enquanto o secret MASTER_TOKEN não tiver pelo menos 24 caracteres, a API de chat e memória retorna 401; a IA não poderá ser testada autenticada.
-- No Cloudflare Dashboard > Workers & Pages > `vini-master-ai1` > Settings > Variables and Secrets, cadastre `MASTER_TOKEN` como Secret com pelo menos 40 caracteres; depois abra o cadeado na aplicação.
+- Cloudflare Cron: https://developers.cloudflare.com/workers/configuration/cron-triggers/
+- Cloudflare Workers Builds: https://developers.cloudflare.com/workers/ci-cd/builds/
+- Cloudflare Workflows: https://developers.cloudflare.com/workflows/
+- GitHub tokens fine-grained: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
