@@ -10,8 +10,30 @@
  */
 import { Agent } from 'agents';
 import { withVoice, WorkersAINova3STT, WorkersAITTS } from 'agents/voice';
+import { ElevenLabsTTS } from '@cloudflare/voice-elevenlabs';
 import {chooseThread,getThreadMessages,saveThreadMessage} from './chat-threads.js';
 import {callAI} from './ai.js';
+
+// ElevenLabs is always opt-in; never charge a third-party account on a default call.
+// The voice ID is selected explicitly in Cloudflare Worker settings/secrets.
+function createVoiceTTS(env){
+ if(env.VINI_VOICE_PROVIDER==='elevenlabs'){
+  const voiceId=String(env.VINI_ELEVENLABS_VOICE_ID||'');
+  if(!env.ELEVENLABS_API_KEY||!/^[A-Za-z0-9]{20}$/.test(voiceId)){
+   throw Error('ElevenLabs solicitado, mas não autorizado/configurado. Nenhum serviço de voz externo será acionado.');
+  }
+  return new ElevenLabsTTS({
+   apiKey:env.ELEVENLABS_API_KEY,
+   voiceId,
+   modelId:'eleven_flash_v2_5',
+   outputFormat:'mp3_44100_128'
+  });
+ }
+ if(env.VINI_VOICE_PROVIDER&&env.VINI_VOICE_PROVIDER!=='cloudflare'){
+  throw Error('Provedor TTS não autorizado. Nenhum custo externo será gerado.');
+ }
+ return new WorkersAITTS(env.AI);
+}
 
 const BaseVoiceAgent=withVoice(Agent,{historyLimit:20,maxMessageCount:500});
 const VOICE_SYSTEM=[
@@ -26,7 +48,7 @@ const VOICE_SYSTEM=[
 
 export class ViniVoiceAgent extends BaseVoiceAgent {
  transcriber=new WorkersAINova3STT(this.env.AI);
- tts=new WorkersAITTS(this.env.AI);
+ tts=createVoiceTTS(this.env);
  async onTurn(transcript,context) {
   const spoken=String(transcript||'').trim().slice(0,3500);
   if(!spoken||context?.signal?.aborted)return '';
