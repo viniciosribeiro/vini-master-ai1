@@ -216,3 +216,7 @@ body:before{background:radial-gradient(ellipse at 50% 0,#12326b94,transparent 50
 .vc-office-center .vc-orbit{max-height:174px}
 .vc-office-center .vc-office-logo{font-size:68px}
 @media(max-width:780px){.vc-office-center .vc-orbit{max-height:92px;width:120px}.vc-office-center .vc-office-logo{font-size:38px}.vc-vini-robot{width:69px;height:62px;border-radius:20px}.vc-vini-robot:before{height:29px;top:7px}.vc-vini-eyes{font-size:19px}.vc-vini-chest{font-size:12px}.vc-office-center{min-height:188px}}
+
+/* Active project selector: changes focus, not project data or history. */
+.top .vc-top-project{min-width:138px;max-width:245px;min-height:40px;padding:7px 10px;border:1px solid #2c85af;border-radius:13px;background:linear-gradient(130deg,#0c284c,#0a1836);color:#e5faff;font-size:12px;font-weight:750}
+@media(max-width:780px){.top .vc-top-project{min-width:95px;max-width:125px;height:38px;font-size:11px;padding:5px}.top-actions{gap:5px!important}.top #system-status{display:none!important}}
