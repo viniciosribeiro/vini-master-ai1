@@ -1,4 +1,4 @@
-# VINI MASTER AI — Alpha 0.3 | Projetos e automações
+# VINI MASTER AI — Alpha 0.4 | Projetos, escritório vivo e PWA Android
 
 **Aplicação publicada:** https://vini-master-ai1.viniciosribeiro.workers.dev/
 
@@ -14,6 +14,30 @@
 - **Perfil de trabalho:** síntese semanal das conversas do usuário e dos projetos, editável ou apagável. Não treina pesos dos modelos.
 - Cron diário às 12h UTC: importa novos repositórios (quando autorizado) e analisa um projeto ativo, evitando reanalisar o mesmo projeto em menos de sete dias.
 - Cron semanal segunda-feira às 11h UTC: atualiza o perfil de trabalho.
+
+## Novidades da 0.4
+
+### Entrevista ao criar um projeto
+Quando o usuário escreve **"Quero criar um site/sistema/app..."** ou toca em **Novo projeto com entrevista** no chat, o supervisor inicia até **cinco perguntas**, uma de cada vez:
+1. Onde publicar? Cloudflare, Vercel ou outra hospedagem (sempre a primeira pergunta).
+2. Nome e objetivo.
+3. Público-alvo e dispositivos.
+4. Funcionalidades indispensáveis.
+5. Estilo visual e repositório GitHub já existente, se houver.
+
+O usuário pode escrever **PODE INICIAR** em qualquer momento; após a quinta resposta o fluxo inicia automaticamente. O projeto e as respostas ficam no D1. Se houver GitHub autorizado e repositório informado, é agendada uma tarefa de código para PR rascunho; caso contrário, é agendada uma missão de planejamento, quando houver cota de Workflows. **Não existe publicação imediata de código gerado em produção.**
+
+### Links de deploy
+Em **Projetos**, cada cartão exibe links cadastrados de **produção** e **prévia**. Na página do projeto é possível informar URLs HTTPS ou clicar **Procurar deploys no GitHub**. Ao abrir o projeto, o sistema consulta automaticamente deployments bem-sucedidos, com limite de frequência. A revisão diária também busca links dos projetos ativos. Links obtidos do GitHub são baseados em registros de status **success** e não equivalem a uma verificação de disponibilidade HTTP em tempo real; URLs informadas manualmente não são verificadas.
+
+Para consultar deployments **privados**, o token fine-grained necessita **Deployments → Read-only**, além de Contents → Read/Write e Pull requests → Read/Write para os PRs. Não é necessário Deployments Write. Repositórios com build que não publica uma URL de ambiente precisam do cadastro manual ou de futura integração específica do provedor.
+
+### Escritório vivo
+O escritório apresenta status de tarefas registradas no D1, atualizadas periodicamente: animação mais visível quando o Workflow está trabalhando, pequena movimentação neutra quando o agente está disponível, mini balões com as últimas ações **reais** e uma notificação temporária quando surgem novos eventos. Não inventa progresso, nem mostra toda a equipe trabalhando se ela estiver parada. A equipe de programação alimenta o registro de eventos ao ler GitHub, gerar arquivos e abrir PR.
+
+### Instalação Android
+O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service worker e modo **standalone**. No Chrome Android, abra o site e toque em **Instalar app**, ou no menu ⋮ → **Instalar aplicativo / Adicionar à tela inicial**. O PWA cria um ícone no celular e pode abrir sem barra de navegador. Não é APK na Play Store; conexão é necessária para IA, projetos, login e memória. O service worker armazena somente arquivos públicos da interface (nunca APIs ou mensagens privadas).
+
 
 ## Como usar pelo celular
 
@@ -36,6 +60,13 @@
 - Sugestões periódicas são produzidas a partir dos dados e modelos disponíveis, não de pesquisa atualizada na internet.
 - Alertas são **dentro do aplicativo**; notificações push, email e WhatsApp ainda não foram implementadas.
 - Todas as funcionalidades estão sujeitas às cotas gratuitas e limites de NVIDIA, Workers AI, D1, Workflows e GitHub.
+
+## Validação adicional da 0.4
+
+- A publicação do Worker foi confirmada com versão `0.4.0`, bindings AI, DB e MISSIONS ativos.
+- Manifest e service worker são servidos pelo endereço online, com ícones PNG 192px e 512px presentes no repositório publicado.
+- Funções novas foram verificadas sintaticamente e a sequência de cinco perguntas foi simulada com banco de testes; a entrevista iniciou na hospedagem e encerrou com projeto registrado.
+- A ligação autenticada com GitHub e um deploy externo ainda exige teste end-to-end após configuração do token com escopo adequado. A instalação PWA precisa ser confirmada em Chrome Android real.
 
 ## Validação
 
