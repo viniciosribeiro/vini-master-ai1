@@ -1,3 +1,4 @@
+import {codeMission} from './github-engine.js';
 import {WorkflowEntrypoint} from 'cloudflare:workers';
 import {AGENTS,callAI,agentPrompt} from './ai.js';
 async function record(db,mission,agent,description){
@@ -8,6 +9,7 @@ async function agentState(db,mission,agent,status,text='',provider=null){
 }
 export class MissionWorkflow extends WorkflowEntrypoint {
  async run(event,step){
+  if(event.payload?.codeJobId)return codeMission(this.env,event.payload.codeJobId,step);
   const id=event.payload.missionId;
   const mission=await step.do('Carregar missão',async()=>this.env.DB.prepare('SELECT * FROM missions WHERE id=?').bind(id).first());
   if(!mission)return {error:'Missão inexistente'};
