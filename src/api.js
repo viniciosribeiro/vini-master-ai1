@@ -1,3 +1,4 @@
+import {authorizeSession,verifyMasterHeader,issueCookie,expireCookie,sameOriginMutation} from './session-auth.js';
 import {readExecutionLedger} from './execution-ledger.js';
 import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVercelProjects,getVercelDeployments,initiatePreviewRedeploy,vercelDeploymentStatus} from './vercel-connector.js';
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
@@ -15,14 +16,8 @@ import {ensureSchema} from './bootstrap.js';
 const respond=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const fail=(message,status=400)=>respond({error:message},status);
 const safeId=x=>/^[a-zA-Z0-9_-]{1,80}$/.test(x||'');
-export function authorized(req,env){
- if(!env.MASTER_TOKEN||env.MASTER_TOKEN.length<24)return false;
- const got=req.headers.get('Authorization')||'';
- const good='Bearer '+env.MASTER_TOKEN;
- if(got.length!==good.length)return false;
- let diff=0;for(let i=0;i<got.length;i++)diff|=got.charCodeAt(i)^good.charCodeAt(i);
- return diff===0;
-}
+export async function authorized(req,env){return authorizeSession(req,env);}
+
 async function parse(req){
  if(Number(req.headers.get('content-length')||0)>25000)throw Error('Mensagem muito longa.');
  const raw=await req.text();
@@ -40,9 +35,19 @@ async function recall(env,content){
  }catch{return [];}
 }
 export async function handleAPI(req,env){
- if(!authorized(req,env))return fail(env.MASTER_TOKEN?.length>=24?'A chave de acesso não corresponde ao MASTER_TOKEN configurado na Cloudflare. A chave NVIDIA é diferente da senha deste painel.':'Acesso ainda não configurado: adicione MASTER_TOKEN de pelo menos 24 caracteres nos Secrets do Worker Cloudflare.',401);
+ const authPath=new URL(req.url).pathname;
+ if(authPath==='/api/auth/login'&&req.method==='POST'){
+  if(!sameOriginMutation(req))return fail('Origem da requisição não autorizada.',403);
+  if(!verifyMasterHeader(req,env))return fail('Senha do painel incorreta.',401);
+  try{
+   const input=await parse(req),issued=await issueCookie(env,{remember:input.remember===true});
+   return Response.json({authenticated:true,remembered:issued.remembered,expiresAt:issued.expiresAt},{headers:{'Cache-Control':'no-store','Set-Cookie':issued.cookie,'X-Content-Type-Options':'nosniff'}});
+  }catch(e){return fail('Não foi possível iniciar a sessão: '+String(e.message||e).slice(0,100),500);}
+ }
+ if(!await authorized(req,env))return fail(env.MASTER_TOKEN?.length>=24?'A chave de acesso não corresponde ao MASTER_TOKEN configurado na Cloudflare. A chave NVIDIA é diferente da senha deste painel.':'Acesso ainda não configurado: adicione MASTER_TOKEN de pelo menos 24 caracteres nos Secrets do Worker Cloudflare.',401);
  const sessionPath=new URL(req.url).pathname;
  if(sessionPath==='/api/auth/session'&&req.method==='GET')return respond({authenticated:true,cloudflareAI:!!env.AI?.run,storage:!!env.DB});
+ if(sessionPath==='/api/auth/logout'&&req.method==='POST')return Response.json({loggedOut:true},{headers:{'Cache-Control':'no-store','Set-Cookie':expireCookie(),'X-Content-Type-Options':'nosniff'}});
  if(!env.DB)return fail('Binding do banco DB ausente.',503);
  const url=new URL(req.url),path=url.pathname,method=req.method;
  try{
