@@ -49,7 +49,7 @@ export async function handleAPI(req,env){
   if(path==='/api/state'&&method==='GET'){
    const [a,b,c,d,e,f,g]=await Promise.all([
     env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
-    env.DB.prepare('SELECT agent_id,status,provider,mission_id,output FROM agent_runs WHERE mission_id=(SELECT id FROM missions ORDER BY created_at DESC LIMIT 1)').all(),
+    env.DB.prepare("SELECT agent_id,status,provider,mission_id,output FROM agent_runs WHERE mission_id=(SELECT id FROM missions ORDER BY CASE WHEN status='running' THEN 0 WHEN status='queued' THEN 1 ELSE 2 END,created_at DESC LIMIT 1)").all(),
     env.DB.prepare('SELECT * FROM activity ORDER BY id DESC LIMIT 40').all(),
     env.DB.prepare('SELECT * FROM memories ORDER BY created_at DESC LIMIT 100').all(),
     env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first(),
