@@ -1,18 +1,19 @@
 const $=id=>document.getElementById(id);
 const AGENT_NAMES={supervisor:'Supervisor',programador:'Programador',designer:'Designer',qa:'QA / Testes',infra:'Infraestrutura',pesquisa:'Pesquisa'};
 const storageKey='vini_master_token';
-let token=sessionStorage.getItem(storageKey)||'';
+let token='';
+const legacyToken=sessionStorage.getItem(storageKey)||'';
 let authValidated=false;
 let state={missions:[],runs:[],activity:[],memories:[],agents:[],provider:'auto',counts:{}};
 let missionSelection='';
 const escapeTime=x=>{try{return new Date(x).toLocaleString('pt-BR')}catch{return String(x||'')}};
 function notify(msg){const el=$('notification');el.textContent=msg;el.hidden=!msg;clearTimeout(window.noticeTimeout);if(msg)window.noticeTimeout=setTimeout(()=>el.hidden=true,9000);}
 async function api(path,options={}){
- if(!token||!authValidated)throw Error('Entre com o MASTER_TOKEN do painel usando o cadeado 🔐. Não use a chave NVIDIA.');
- const headers={Authorization:'Bearer '+token,...options.headers};
+ if(!authValidated)throw Error('Acesse o painel pelo cadeado 🔐.');
+ const headers={...options.headers};
  if(options.body&&typeof options.body!=='string')options.body=JSON.stringify(options.body);
  if(options.body)headers['Content-Type']='application/json';
- const res=await fetch('/api'+path,{...options,headers,cache:'no-store'});
+ const res=await fetch('/api'+path,{...options,headers,credentials:'same-origin',cache:'no-store'});
  let data={};try{data=await res.json()}catch{}
  if(!res.ok){if(res.status===401){clearInvalidSession();openAccess(data.error||'A sessão expirou ou a chave do painel mudou.');}throw Error(data.error||'Falha HTTP '+res.status);}
  return data;
@@ -115,7 +116,7 @@ function renderAssistant(container,content,provider){
 }
 
 function updateStatus(){
- const live=!!token&&authValidated;
+ const live=authValidated;
  $('system-status').textContent=live?'● Conectado':'● Sem conexão';
  $('system-status').classList.toggle('connected',live);
  $('metric-agents').textContent=state.agents.length||6;
@@ -205,7 +206,7 @@ function renderDelegationStatus(){
 }
 $('jarvis-task-open')?.addEventListener('click',()=>show('office'));
 async function refresh(){
- if(!token||!authValidated)return;
+ if(!authValidated)return;
  try{
   state=await api('/state');
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
@@ -216,7 +217,7 @@ async function refresh(){
  }catch(e){notify(e.message);}
 }
 async function loadChat(){
- if(!token||!authValidated)return;
+ if(!authValidated)return;
  try{
   await refreshVerifiedDeploymentLinks();
   const data=await api('/conversation?limit=80');
@@ -296,22 +297,34 @@ $('search-form').addEventListener('submit',async e=>{e.preventDefault();const bo
 $('provider-select').addEventListener('change',async e=>{const provider=e.target.value;try{await api('/settings',{method:'POST',body:{provider}});state.provider=provider;updateStatus();notify('Modelo ajustado.');}catch(err){notify(err.message);}});
 function openAccess(reason=''){$('access-token').value='';const error=$('access-error');error.textContent=reason;error.hidden=!reason;if(!$('access-dialog').open)$('access-dialog').showModal();}
 function clearInvalidSession(){token='';authValidated=false;sessionStorage.removeItem(storageKey);updateStatus();}
-async function verifyAccess(candidate){
- const response=await fetch('/api/auth/session',{headers:{Authorization:'Bearer '+candidate},cache:'no-store'});
+async function verifyAccess(candidate,remember=true){
+ const response=await fetch('/api/auth/login',{method:'POST',headers:{Authorization:'Bearer '+candidate,'Content-Type':'application/json'},body:JSON.stringify({remember}),credentials:'same-origin',cache:'no-store'});
  let result={};try{result=await response.json();}catch{}
  if(!response.ok||!result.authenticated)throw Error(result.error||'Acesso não autorizado. Confira o MASTER_TOKEN da Cloudflare.');
  return result;
 }
-$('open-access').addEventListener('click',openAccess);$('settings-access').addEventListener('click',openAccess);
+async function verifyRememberedSession(){
+ const response=await fetch('/api/auth/session',{credentials:'same-origin',cache:'no-store'});
+ if(!response.ok)return false;
+ const result=await response.json();return result.authenticated===true;
+}
+
+$('open-access').addEventListener('click',()=>openAccess());$('settings-access').addEventListener('click',()=>openAccess());
 $('access-cancel').addEventListener('click',()=>$('access-dialog').close());
+$('logout-device')?.addEventListener('click',async()=>{
+ if(!confirm('Sair deste dispositivo e solicitar a senha no próximo acesso?'))return;
+ try{await api('/auth/logout',{method:'POST',body:{}});}catch{}
+ clearInvalidSession();openAccess('Sessão encerrada neste dispositivo.');
+});
 $('access-form').addEventListener('submit',async e=>{
  e.preventDefault();
  const value=$('access-token').value.trim(),button=$('access-submit'),error=$('access-error');
  button.disabled=true;button.textContent='Conferindo...';error.hidden=true;
  try{
-  await verifyAccess(value);
-  token=value;authValidated=true;
-  sessionStorage.setItem(storageKey,token);
+  await verifyAccess(value,$('remember-device')?.checked===true);
+  token='';authValidated=true;
+  sessionStorage.removeItem(storageKey);
+  $('access-token').value='';
   $('access-dialog').close();
   updateStatus();notify('Acesso validado. Painel conectado com segurança.');
   await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
@@ -326,7 +339,7 @@ $('export-data').addEventListener('click',async()=>{try{const data=await api('/e
 $('erase-chat').addEventListener('click',async()=>{if(!confirm('Apagar TODAS as mensagens? Memórias fixadas permanecem.'))return;try{await api('/conversation',{method:'DELETE',body:{confirm:'APAGAR'}});await loadChat();await refresh();notify('Histórico apagado.');}catch(e){notify(e.message);}});
 function providerFeedback(message){const node=$('provider-feedback');if(node)node.textContent=message;notify(message);}
 async function probe(provider,button){
- if(!token||!authValidated){show('settings');openAccess();return;}
+ if(!authValidated){show('settings');openAccess();return;}
  button.disabled=true;providerFeedback('Testando '+(provider==='cloudflare'?'Cloudflare AI':'NVIDIA')+' com uma chamada real...');
  try{const result=await api('/providers/test',{method:'POST',body:{provider}});
   providerFeedback('Conexão confirmada: '+result.provider+' · '+result.model+' · Resposta: '+result.reply);
@@ -337,7 +350,7 @@ $('open-provider-connect').addEventListener('click',()=>{show('settings');$('nvi
 $('test-cf').addEventListener('click',e=>probe('cloudflare',e.currentTarget));
 $('test-nvidia').addEventListener('click',e=>probe('nvidia',e.currentTarget));
 $('nvidia-connect-form').addEventListener('submit',async e=>{
- e.preventDefault();if(!token||!authValidated){openAccess();return;}
+ e.preventDefault();if(!authValidated){openAccess();return;}
  const input=$('nvidia-api-key'),button=$('connect-nvidia'),key=input.value.trim();
  if(!key)return;
  button.disabled=true;providerFeedback('Conferindo a chave com a NVIDIA...');
@@ -361,14 +374,24 @@ async function initializeAccess(){
   const res=await fetch('/api/health',{cache:'no-store'});const health=await res.json();
   if(!health.accessConfigured){clearInvalidSession();notify('Configure MASTER_TOKEN nos Secrets de Produção do Worker vini-master-ai1.');return;}
  }catch{notify('Não foi possível consultar o diagnóstico do Worker.');}
- if(!token){openAccess();return;}
  try{
-  await verifyAccess(token);
-  authValidated=true;updateStatus();
-  await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
+  if(await verifyRememberedSession()){
+   sessionStorage.removeItem(storageKey);
+   authValidated=true;updateStatus();
+   await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
+   return;
+  }
+  if(legacyToken){
+   await verifyAccess(legacyToken,true); // Migrate an already authenticated tab, no new password required.
+   sessionStorage.removeItem(storageKey);
+   authValidated=true;updateStatus();
+   await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
+   return;
+  }
+  openAccess();
  }catch(err){
   clearInvalidSession();
-  openAccess('A sessão antiga não foi aceita. Digite novamente o MASTER_TOKEN do painel. '+err.message);
+  openAccess('Sua sessão não foi aceita. Entre novamente para ativar acesso persistente. '+err.message);
  }
 }
 initializeAccess();
