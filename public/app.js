@@ -60,9 +60,17 @@ function appendExecutionReceipt(container,data){
  container.append(proof);
 }
 const HISTORICAL_ACTION_CLAIM=/(?:\b(?:vou|vamos|acabei de|j[aá]|estou)\b[\s\S]{0,130}\b(?:for[cç]ar|disparar|executar|publicar|criar|implantar|rodar|fazer|entrar|acessar|subir)\b[\s\S]{0,100}\b(?:vercel|cloudflare|deploy|build|github|produ[cç][aã]o)\b)/iu;
+function addVercelAction(container,label='Conectar / escolher projeto Vercel'){
+ const btn=el('button','secondary vini-action-button',label);btn.type='button';
+ btn.addEventListener('click',()=>{if(typeof window.openVercelSetup==='function')window.openVercelSetup();else show('settings');});
+ container.append(btn);
+}
 function renderAssistant(container,content,provider){
  container.replaceChildren();
  let value=cleanOldHtml(content).replace(/\r\n/g,'\n').trim();
+ const priorUnsupported=value.includes('Não executei nenhuma ação externa nesta conversa')||value.includes('A resposta anterior do modelo prometia operações sem comprovante');
+ if(priorUnsupported)value='Ainda não executei o build. A resposta anterior prometia algo sem comprovação. Agora você pode conectar a Vercel e escolher um projeto para solicitar um rebuild real de prévia.';
+
  if((provider==='nvidia'||provider==='cloudflare')&&HISTORICAL_ACTION_CLAIM.test(value)){
   value='Esta resposta de IA prometia uma ação externa, mas não traz comprovante de execução. Consulte a área Comprovantes para conferir se algum trabalho real foi concluído.';
  }
@@ -97,6 +105,7 @@ function renderAssistant(container,content,provider){
   link.className='deploy-chat-verified';link.textContent='✓ Abrir '+entry.name+' (HTTP verificado) ↗';
   container.append(link);
  }
+ if(priorUnsupported||(/Vercel/.test(value)&&/(?:conectar|conecte|escolha|selecione)/i.test(value)&&/(?:build|rebuild|deploy|prévia)/i.test(value)))addVercelAction(container,'Configurar Vercel e executar prévia');
  if(provider==='nvidia'||provider==='cloudflare')appendExecutionReceipt(container,{kind:'conversation'});
  if(provider==='system')container.append(el('span','reply-provider','Registro do sistema · confira o status em Comprovantes'));
  if(provider){
@@ -232,6 +241,8 @@ async function sendChat(content,origin){
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
   if(result.execution&&result.execution.kind!=='conversation')appendExecutionReceipt(origin,result.execution);
+  if(result.actionRequired&&/^vercel_/.test(result.actionRequired)&&!origin.querySelector('.vini-action-button'))addVercelAction(origin,result.actionRequired==='vercel_setup'?'Conectar Vercel agora':'Escolher projeto Vercel');
+
   if(result.execution?.kind==='blocked'||result.delegation?.status==='queued')document.dispatchEvent(new Event('vini:delegated'));
 
   if(result.delegation?.status==='queued'){
