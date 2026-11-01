@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "VINI MASTER AI — Central de Agentes",
+  "name": "VINI MASTER AI — JARVIS Robot Edition",
   "short_name": "VINI MASTER",
-  "description": "Equipe de inteligência artificial e projetos, com memória e Cloudflare.",
+  "description": "Chat inteligente e escritório de robôs agentes para projetos, memória e deploys.",
   "start_url": "/?source=install",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f8fc",
-  "theme_color": "#5268e8",
+  "background_color": "#050c1b",
+  "theme_color": "#071323",
   "orientation": "any",
   "lang": "pt-BR",
   "icons": [
