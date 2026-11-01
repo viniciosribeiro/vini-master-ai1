@@ -83,6 +83,10 @@ function startVoice(){
  try{rec.start();setListening(true);}catch{setListening(false);voiceStatus('Não foi possível iniciar o microfone.');}
 }
 mics().forEach(b=>b.addEventListener('click',startVoice));
+function disableVoiceOnTyping(){voiceEnabled=false;window.speechSynthesis?.cancel();}
+$('chat-message')?.addEventListener('input',disableVoiceOnTyping);
+$('jarvis-dock-message')?.addEventListener('input',disableVoiceOnTyping);
+
 window.jarvisSpeakReply=(message)=>{
  if(!voiceEnabled||!window.speechSynthesis)return;
  const clean=String(message||'').replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').slice(0,1500).trim();if(!clean)return;
@@ -90,6 +94,11 @@ window.jarvisSpeakReply=(message)=>{
  const voices=speechSynthesis.getVoices(),br=voices.find(v=>v.lang.toLowerCase()==='pt-br');if(br)utterance.voice=br;
  speechSynthesis.speak(utterance);
 };
+const history=$('messages');
+if(history&&window.MutationObserver){
+ const observer=new MutationObserver(()=>document.body.classList.toggle('jarvis-has-history',history.children.length>=3));
+ observer.observe(history,{childList:true});
+}
 window.renderJarvisMonitor=()=>{
  if(typeof state==='undefined')return;
  const running=(state.codeJobs||[]).filter(j=>j.status==='working');
