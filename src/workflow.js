@@ -27,27 +27,32 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     await record(this.env.DB,id,'supervisor','Plano concluído e distribuído');
     return answer.text;
    });
-   const contributions=[];
-   for(const agent of AGENTS.filter(x=>x.id!=='supervisor')){
-    const result=await step.do(agent.name+' analisa a missão',{retries:{limit:1,delay:'5 seconds'}},async()=>{
+   const members=await step.do('Consultar especialistas atribuídos',async()=>{
+    const rows=await this.env.DB.prepare('SELECT agent_id FROM agent_runs WHERE mission_id=?').bind(id).all();
+    const assigned=new Set((rows.results||[]).map(x=>x.agent_id));
+    return AGENTS.filter(a=>a.id!=='supervisor'&&assigned.has(a.id));
+   });
+   // Independent durable steps: specialists work concurrently, and each step is replay-safe.
+   const contributions=await Promise.all(members.map(agent=>
+    step.do(agent.name+' analisa a missão',{retries:{limit:1,delay:'5 seconds'}},async()=>{
      await agentState(this.env.DB,id,agent.id,'working');
-     await record(this.env.DB,id,agent.id,'Analisando: '+mission.title);
+     await record(this.env.DB,id,agent.id,'Executando análise especializada: '+mission.title);
      try{
-      const answer=await callAI(this.env,[{role:'system',content:agentPrompt(agent)},{role:'user',content:'Missão: '+mission.description+'\nPlano:\n'+plan.slice(0,4000)+'\nEntregue contribuição concreta.'}],mission.provider);
+      const answer=await callAI(this.env,[{role:'system',content:agentPrompt(agent)},{role:'user',content:'Missão: '+mission.description+'\nPlano do supervisor:\n'+plan.slice(0,4000)+'\nProduza apenas a sua contribuição real, verificável e útil. Informe limites de execução claramente.'}],mission.provider);
       await agentState(this.env.DB,id,agent.id,'done',answer.text,answer.provider);
-      await record(this.env.DB,id,agent.id,'Análise concluída');
+      await record(this.env.DB,id,agent.id,'Contribuição concluída: '+mission.title.slice(0,120));
       return {name:agent.name,text:answer.text};
      }catch(err){
       const reason=String(err.message||err);
       await agentState(this.env.DB,id,agent.id,'failed',reason);
-      await record(this.env.DB,id,agent.id,'Falha de execução');
+      await record(this.env.DB,id,agent.id,'Falha: '+reason.slice(0,160));
       return {name:agent.name,text:'Falhou: '+reason};
      }
-    });
-    contributions.push(result);
-   }
+    })
+   ));
    const result=await step.do('Supervisor entrega relatório',{retries:{limit:1,delay:'5 seconds'}},async()=>{
     await agentState(this.env.DB,id,'supervisor','working',plan);
+    await record(this.env.DB,id,'supervisor','Revisando '+contributions.length+' contribuições da equipe');
     const summary=contributions.map(x=>'### '+x.name+'\n'+x.text.slice(0,1800)).join('\n\n');
     const answer=await callAI(this.env,[{role:'system',content:'Você é o supervisor da equipe. Consolide resultados reais em um relatório útil e inclua limitações. Não alegue que editou código ou executou deploy.'},{role:'user',content:'MISSÃO:\n'+mission.description+'\nPLANO:\n'+plan.slice(0,2500)+'\nEQUIPE:\n'+summary}],mission.provider);
     await agentState(this.env.DB,id,'supervisor','done',answer.text,answer.provider);
@@ -58,6 +63,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
    return {missionId:id,status:'done',preview:result.slice(0,200)};
   }catch(err){
    await this.env.DB.prepare("UPDATE missions SET status='failed',error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(String(err.message||err).slice(0,400),id).run();
+   await this.env.DB.prepare("UPDATE agent_runs SET status='failed',output=CASE WHEN output='' THEN 'Workflow interrompido' ELSE output END,finished_at=CURRENT_TIMESTAMP WHERE mission_id=? AND status IN ('queued','working')").bind(id).run();
    await record(this.env.DB,id,'supervisor','Execução interrompida por erro');
    return {missionId:id,status:'failed'};
   }
