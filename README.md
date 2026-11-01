@@ -1,3 +1,5 @@
+# VINI MASTER AI — Evidências e Execuções 0.9.0
+
 # VINI MASTER AI — Monitor de Ações 0.8.0
 
 ## Versão 0.8.0 — Diário de execução em tempo quase real
@@ -135,3 +137,12 @@ O mesmo endereço HTTPS possui web app manifest, ícones PNG 192/512, service wo
 
 ### Complemento 0.7.1: equipe de programação de verdade
 O pipeline de PR registra Supervisor, Programador, QA (revisão estática) e Designer (revisão textual quando houver interface) em `code_agent_runs` (D1). O Escritório observa `codeRuns` e apresenta progresso real por agente. Animação de trabalhando exige `status=working` registrado. Nenhuma chamada de modelo é alegada como teste de navegador ou deploy. Teste simulado do pipeline gerou PR mock e registrou as quatro especialidades; isso não equivale à execução autenticada do GitHub.
+
+## Correção de confiança 0.9.0
+- O chat de IA **não possui ferramentas para executar build Vercel**, mesmo que a resposta natural diga o contrário. O backend agora bloqueia pedidos diretos de build/deploy não suportados e deixa isso explícito no recibo de execução, sem gastar tokens com missão fictícia.
+- Respostas livres da IA são filtradas contra promessas de ações externas sem prova. Uma resposta normal recebe badge "Somente conversa, nenhuma execução externa confirmada". Missões recebem ID com status próprio. Mensagens históricas suspeitas são rotuladas como não comprovadas.
+- `/api/evidence` autenticado agrega registros D1 de jobs de programação e missões de análise. Apenas code_jobs concluídos com PR de `github.com/<owner>/<repo>/pull/<n>` correspondente ao repositório são apresentados como trabalho externo verificável. Relatórios são marcados "Análise de IA; não altera código nem faz deploy". Nenhum PR significa nenhum código comprovado.
+- Chat e Escritório têm atalho para os Comprovantes; o painel mostra fila, falha, relatório e PR com URL originada do executor. A UI não simula execução ou deploy.
+- Respostas de conversa não acionam popups que confundam conversa com trabalho de equipe; robô volta ao estado pronto após responder. Quando Workflow está encerrado, 0 agentes trabalhando é honesto e registros persistem no diário.
+- Testes de lógica e de rejeição de falsas promessas em `tests/action-proof.test.mjs`. **Ainda não há integração com a API de deploy da Vercel; não anunciar build como executado.** Uma integração operacional exige credenciais/permissões e um executor real de publicação. Não enviar segredos pelo chat.
+- Testes de regressão de lógica não substituem verificar um PR real sob credenciais de produção nem comprovar uma implantação externa.
