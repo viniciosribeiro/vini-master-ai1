@@ -238,7 +238,7 @@ async function sendChat(content,origin){
   if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
 
   await refresh();
-  if(!$('section-chat').hidden)await loadChat();
+  if(!$('section-chat').hidden&&!result.delegation?.status?.includes('queued'))await loadChat();
  }catch(e){
   origin.replaceChildren(el('p','reply-error','Não consegui responder agora: '+e.message));
   notify(e.message);
