@@ -1,4 +1,5 @@
-import {saveDeploymentLinks,syncProjectDeployments} from './deployments.js';
+import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
+import {guardChatDeployment,deploymentContext} from './deploy-verification.js';
 import {setupIntakes,handleIntake} from './intake.js';
 import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
@@ -171,6 +172,12 @@ export async function handleAPI(req,env){
      return respond({result,project:await getProject(env.DB,id)});
     }catch(e){return fail(String(e.message||e).slice(0,170),503);}
    }
+   if(action==='verify'&&method==='POST'){
+    if(row.status==='trashed')return fail('Restaure o projeto antes de verificar.',409);
+    const body=await parse(req),kind=['production','preview','both'].includes(body.kind)?body.kind:'both';
+    const result=await verifyProjectLinks(env.DB,row,kind);
+    return respond({result,project:await getProject(env.DB,id)});
+   }
    if(action==='ideas'&&method==='POST'){
     if(row.status!=='active')return fail('Ative o projeto antes de gerar ideias.',409);
     const today=await env.DB.prepare("SELECT COUNT(*) n FROM project_events WHERE project_id=? AND action='ideas-generated' AND date(created_at)=date('now')").bind(id).first();
@@ -232,13 +239,14 @@ export async function handleAPI(req,env){
     await env.DB.prepare('INSERT INTO memories(id,content) VALUES(?,?)').bind(crypto.randomUUID(),saved.slice(0,1200)).run();
     await log(env,'supervisor','Memória permanente solicitada e registrada');
    }
-   const [past,pinned,relevant,projects,decisions,profile]=await Promise.all([
+   const [past,pinned,relevant,projects,decisions,profile,verifiedDeployments]=await Promise.all([
     env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 18').all(),
     env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 60').all(),
     recall(env,message),
     env.DB.prepare("SELECT name,description,platform,repo FROM projects WHERE status='active' ORDER BY updated_at DESC LIMIT 20").all(),
     env.DB.prepare("SELECT action,description FROM project_events ORDER BY id DESC LIMIT 25").all(),
-    readProfile(env.DB)
+    readProfile(env.DB),
+    env.DB.prepare("SELECT name,deploy_url,preview_url,deploy_verified_at FROM projects WHERE status='active' AND deploy_status='online' AND deploy_url<>'' ORDER BY deploy_verified_at DESC LIMIT 15").all()
    ]);
    const context=(pinned.results||[]).map(x=>'- '+x.content.slice(0,600)).join('\n').slice(0,8000);
    const old=relevant.filter(x=>x.content!==message).map(x=>'- '+x.content.slice(0,500)).join('\n').slice(0,5000);
@@ -246,12 +254,15 @@ export async function handleAPI(req,env){
    const portfolio=(projects.results||[]).map(p=>p.name+' ['+p.platform+'] '+p.description.slice(0,320)+' '+p.repo).join('\n').slice(0,5600);
    const activity=(decisions.results||[]).map(d=>d.action+': '+d.description.slice(0,180)).join('\n').slice(0,2700);
    const system='Você é o VINI MASTER, um assistente pessoal amigável, direto e muito inteligente, conversando em português brasileiro natural. Fale como uma pessoa prestativa: frases simples, tom humano, sem linguagem corporativa, sem relatórios automáticos, sem introduções protocolares, sem repetir o pedido e sem blocos de títulos desnecessários. Em conversas normais, priorize uma resposta curta e útil (geralmente 2 a 5 parágrafos breves). Se a pessoa pedir detalhes, código ou uma análise complexa, ofereça a profundidade necessária. Não gere listas de etapas, recomendações ou riscos por padrão, nem rótulos como Resposta:, Conclusão:, Análise:. Evite Markdown excessivo e nunca exponha seu raciocínio interno. Não afirme que alterou GitHub, fez deploy ou executou ferramentas: isso não está habilitado neste estágio. Quando a pessoa pedir trabalho dos especialistas, explique brevemente como usar Nova missão. Leve em conta estas memórias (não as repita sem motivo):\n'+context+'\nTrechos úteis de conversas anteriores (use apenas se forem relevantes):\n'+old+'\nProjetos ativos do usuário:\n'+portfolio+'\nDecisões e alterações recentes de projetos:\n'+activity+'\nPerfil de trabalho registrado e editável:\n'+profile.content.slice(0,3400);
+   const verifiedSites=verifiedDeployments.results||[];
+   const deployRules='\nREGRA OBRIGATÓRIA: Mensagens de chat NÃO criam arquivos, deploys nem sites. Nunca afirme ter feito deploy, publicado, executado código, testado URL, gerado imagens ou criado arquivos nesta conversa. Só informe publicação confirmada se houver evidência na lista abaixo. Não invente domínios ou links, não mostre HTML como <a href>, prefira português simples. Se o usuário pedir um projeto publicado, explique que é necessário um workflow com PR e deployment verificado. Publicações verificadas:\n'+(deploymentContext(verifiedSites)||'Nenhum deploy online validado no cadastro.')+'\nLinks cadastrados porém não verificados NÃO são links online. Não copie claims de outputs anteriores como fatos.';
    const history=(past.results||[]).reverse().map(x=>({role:x.role,content:x.content.slice(0,MAX_MESSAGE)}));
    try{
-    const answer=await callAI(env,[{role:'system',content:system},...history],provider);
-    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,?)").bind(answer.text,answer.provider).run();
+    const answer=await callAI(env,[{role:'system',content:system+deployRules},...history],provider);
+    const safeReply=guardChatDeployment(answer.text,verifiedSites);
+    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,?)").bind(safeReply,answer.provider).run();
     await log(env,'supervisor','Respondeu à conversa via '+answer.provider);
-    return respond({reply:answer.text,provider:answer.provider,model:answer.model,memorySaved:!!saved});
+    return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved});
    }catch(e){return fail(String(e.message||e),503);}
   }
   if(path==='/api/missions'&&method==='POST'){
