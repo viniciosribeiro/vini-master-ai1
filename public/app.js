@@ -122,6 +122,7 @@ async function refresh(){
   state=await api('/state');
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
   if(typeof renderOfficeLive==='function')renderOfficeLive();
+  if(typeof window.renderJarvisMonitor==='function')window.renderJarvisMonitor();
   if(missionSelection&&state.missions.some(m=>m.id===missionSelection&&m.status==='running'))loadMission(missionSelection);
  }catch(e){notify(e.message);}
 }
@@ -148,6 +149,7 @@ async function sendChat(content,origin){
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
+  if(typeof window.jarvisSpeakReply==='function')window.jarvisSpeakReply(result.reply);
   if(result.intake){const startBtn=document.getElementById('intake-start-now');if(startBtn)startBtn.hidden=result.intake.status!=='collecting';}
   if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
 
