@@ -327,7 +327,7 @@ function boot(){
  setInterval(()=>{if(authenticated())paint();},2700);
  setInterval(()=>{if(authenticated()&&!document.hidden)syncCounts();},60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){paint();syncCounts();}});
- document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>{requestAnimationFrame(paint);if(x.dataset.section==='memory')syncCounts();}));
+ document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>{requestAnimationFrame(paint);if(x.dataset.section==='memory')syncCounts();if(x.dataset.section==='missions'&&typeof loadProjects==='function')void loadProjects().catch(()=>{});}));
  document.addEventListener('vini:delegated',()=>setTimeout(paint,350));
  setTimeout(()=>{paint();syncCounts();},850);
 }
