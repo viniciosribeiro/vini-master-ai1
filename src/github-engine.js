@@ -20,23 +20,86 @@ export async function createDraftPR(token,repo,id,request,code){const info=await
  return {url:pr.html_url,number:pr.number,branch,files:code.files.map(f=>f.path)};
 }
 export async function codeMission(env,jobId,step){
- const job=await env.DB.prepare('SELECT j.*,p.repo,p.name FROM code_jobs j JOIN projects p ON p.id=j.project_id WHERE j.id=?').bind(jobId).first();if(!job)return {status:'failed',reason:'Job inexistente'};
+ const job=await env.DB.prepare('SELECT j.*,p.repo,p.name FROM code_jobs j JOIN projects p ON p.id=j.project_id WHERE j.id=?').bind(jobId).first();
+ if(!job)return {status:'failed',reason:'Job inexistente'};
+ const visual=/\b(?:interface|layout|visual|ui|ux|tela|css|mobile|responsiv|anima[cç][aã]o|avatar)\b/iu.test(job.request);
+ const team=visual?['supervisor','programador','designer','qa']:['supervisor','programador','qa'];
  const update=async(status,detail,result='')=>{
   await env.DB.prepare('UPDATE code_jobs SET status=?,detail=?,result=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(status,detail,typeof result==='string'?result:JSON.stringify(result),jobId).run();
-  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind('programador',null,(status==='working'?'Trabalhando: ':status==='done'?'Concluído: ':'Falha: ')+detail.slice(0,250)).run();
+  await env.DB.prepare('INSERT INTO activity(agent_id,mission_id,description) VALUES(?,?,?)').bind(status==='done'?'supervisor':'programador',null,(status==='working'?'Trabalhando: ':status==='done'?'Concluído: ':'Falha: ')+detail.slice(0,250)).run();
+ };
+ const progress=async(agent,status,detail,output='')=>{
+  await env.DB.prepare("UPDATE code_agent_runs SET status=?,detail=?,output=?,started_at=CASE WHEN ?='working' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,finished_at=CASE WHEN ? IN ('done','failed') THEN CURRENT_TIMESTAMP ELSE finished_at END WHERE code_job_id=? AND agent_id=?")
+   .bind(status,detail.slice(0,400),String(output||'').slice(0,6000),status,status,jobId,agent).run();
+  await env.DB.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind(agent,detail.slice(0,200)).run();
  };
  try{
-  await update('working','Conferindo repositório GitHub');
-  const info=await step.do('Verificar GitHub',async()=>{const key=await readGitHub(env);if(!key)throw Error('GitHub não conectado.');return verifyGitHub(key,job.repo);});
-  await update('working','Programador produzindo arquivos');
-  const generated=await step.do('Gerar arquivos',async()=>callAI(env,[{role:'system',content:'Você é programador sênior. Responda SOMENTE JSON válido: {"summary":"resumo","files":[{"path":"public/pagina.html","content":"código integral"}]}. Até 3 arquivos, até 20 mil caracteres. Somente pastas src,public,app,pages,components,styles,tests,assets. Nunca alterar auth, secrets, infraestrutura, dependências ou configurações. Construa UI mobile responsiva, não diga que executou testes.'},{role:'user',content:'Projeto '+job.name+'. Pedido: '+job.request.slice(0,3600)+'. Repositório '+info.repo}],job.provider||'auto'));
-  const code=parseCode(generated.text),qa=codeReview(code);if(!qa.passed)throw Error('Revisão bloqueou: '+qa.errors.join(', '));
-  await update('working','Abrindo PR no GitHub');
-  const pr=await step.do('Criar PR rascunho',async()=>{const key=await readGitHub(env);return createDraftPR(key,job.repo,jobId,job.request,code);});
-  await update('done','PR pronto para revisão',pr);
-  await env.DB.prepare('INSERT INTO project_events(project_id,action,description) VALUES(?,?,?)').bind(job.project_id,'draft-pr',pr.url).run();
+  await step.do('Preparar equipe de código',async()=>{
+   for(const agent of team)await env.DB.prepare("INSERT OR IGNORE INTO code_agent_runs(id,code_job_id,agent_id,status) VALUES(?,?,?,'queued')").bind(crypto.randomUUID(),jobId,agent).run();
+   await progress('supervisor','working','Organizando implementação do projeto '+job.name);
+   await update('working','Equipe de código atribuída. Conferindo repositório GitHub.');
+  });
+  const info=await step.do('Verificar GitHub',async()=>{
+   const key=await readGitHub(env);
+   if(!key)throw Error('GitHub não conectado.');
+   return verifyGitHub(key,job.repo);
+  });
+  await step.do('Delegar ao Programador',async()=>{
+   await progress('supervisor','done','Escopo autorizado e repositório identificado: '+info.repo);
+   await progress('programador','working','Gerando arquivos para '+job.name);
+   await update('working','Programador produzindo arquivos reais');
+  });
+  const generated=await step.do('Gerar arquivos',async()=>{
+   return callAI(env,[
+    {role:'system',content:'Você é programador sênior. Responda SOMENTE JSON válido: {"summary":"resumo","files":[{"path":"public/pagina.html","content":"código integral"}]}. Até 3 arquivos, até 20 mil caracteres. Somente pastas src,public,app,pages,components,styles,tests,assets. Nunca alterar auth, secrets, infraestrutura, dependências ou configurações. Construa UI mobile responsiva, não diga que executou testes.'},
+    {role:'user',content:'Projeto '+job.name+'. Pedido: '+job.request.slice(0,3600)+'. Repositório '+info.repo}
+   ],job.provider||'auto');
+  });
+  const code=parseCode(generated.text);
+  await step.do('Preparar revisão QA',async()=>{
+   await progress('programador','done','Arquivos gerados: '+code.files.map(f=>f.path).join(', '));
+   await progress('qa','working','Realizando análise estática de segurança e formato dos arquivos');
+  });
+  const qa=await step.do('QA revisão estática',async()=>{
+   const review=codeReview(code);
+   await progress('qa',review.passed?'done':'failed',review.passed?'Análise estática aprovada (testes de execução não realizados)':'Problemas encontrados: '+review.errors.join('; '),JSON.stringify(review));
+   return review;
+  });
+  if(!qa.passed)throw Error('QA bloqueou PR: '+qa.errors.join(', '));
+  if(visual){
+   await step.do('Designer verifica interface',async()=>{await progress('designer','working','Revisando responsividade e experiência visual dos arquivos gerados');});
+   await step.do('Designer revisão visual',async()=>{
+    try{
+     const answer=await callAI(env,[
+      {role:'system',content:'Você é designer de produto. Analise os arquivos textuais disponibilizados. Aponte no máximo três melhorias concretas de responsividade e UX, mas não alegue screenshots, execução em navegador ou aprovação visual automatizada.'},
+      {role:'user',content:'Pedido: '+job.request.slice(0,1800)+'\nArquivos (trechos):\n'+code.files.map(f=>f.path+'\n'+f.content.slice(0,2200)).join('\n').slice(0,6500)}
+     ],job.provider||'auto');
+     await progress('designer','done','Parecer textual de interface concluído (sem renderização real)',answer.text);
+    }catch(e){await progress('designer','failed','Não foi possível realizar revisão textual de interface: '+String(e.message||e).slice(0,140));}
+   });
+  }
+  await step.do('Programador prepara pull request',async()=>{
+   await progress('programador','working','Preparando branch e PR rascunho com arquivos gerados');
+   await update('working','Abrindo PR rascunho para revisão humana');
+  });
+  const pr=await step.do('Criar PR rascunho',async()=>{
+   const key=await readGitHub(env);return createDraftPR(key,job.repo,jobId,job.request,code);
+  });
+  await step.do('Registrar entrega e status final',async()=>{
+   await progress('programador','done','PR rascunho aberto: #'+pr.number,pr.url);
+   await progress('supervisor','done','Equipe concluiu PR rascunho. Ainda sem merge, testes de execução ou deploy.',pr.url);
+   await update('done','PR pronto para revisão (sem deploy)',pr);
+   await env.DB.prepare('INSERT INTO project_events(project_id,action,description) VALUES(?,?,?)').bind(job.project_id,'draft-pr',pr.url).run();
+  });
   return {status:'done',pr};
- }catch(e){await update('failed',String(e.message||e).slice(0,550));return {status:'failed'};}
+ }catch(e){
+  const reason=String(e.message||e).slice(0,550);
+  try{
+   await env.DB.prepare("UPDATE code_agent_runs SET status='failed',detail=?,finished_at=CURRENT_TIMESTAMP WHERE code_job_id=? AND status IN ('working','queued')").bind('Execução interrompida: '+reason,jobId).run();
+   await update('failed',reason);
+  }catch{}
+  return {status:'failed',reason};
+ }
 }
 
 export async function listGitHubRepos(token){
