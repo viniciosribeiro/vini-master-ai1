@@ -61,3 +61,35 @@ dialog:not(.agent-sheet){width:min(95vw,480px);padding:23px;border-radius:20px}.
 #access-dialog .dialog-actions{display:flex;gap:10px;flex-wrap:wrap}
 #access-dialog .dialog-actions button{min-height:46px;flex:1 1 130px}
 #access-dialog button:disabled{opacity:.65;cursor:wait}
+
+
+/* Chat v1.1: mensagens confinadas, sem aumentar a altura da pagina. */
+.quick-response{display:block;min-width:0;max-width:100%;max-height:min(44dvh,350px)!important;overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;overflow-wrap:anywhere;white-space:normal!important;scrollbar-gutter:stable;border-radius:13px}
+.quick-response:not(:empty){background:#f6f8ff;padding:12px 14px;border:1px solid #e6ebf5}
+.reply-body{display:block;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal}
+.reply-paragraph{margin:0 0 11px!important;font-size:inherit!important;color:inherit!important;line-height:1.65!important;white-space:pre-wrap;overflow-wrap:anywhere}
+.reply-paragraph:last-child{margin-bottom:0!important}
+.reply-provider{display:block;margin-top:13px;padding-top:9px;border-top:1px solid #e4eaf5;font-size:11px;line-height:1.4;color:#66748c;font-weight:600}
+.reply-loading{font-size:13px;color:#566d91}
+.reply-error{font-size:13px;color:#a63b3b}
+#section-chat .padded{min-width:0;max-width:100%;height:min(80dvh,790px);min-height:0!important;overflow:hidden;display:flex;flex-direction:column}
+#section-chat .padded>h1,#section-chat .padded>p{flex:0 0 auto}
+#section-chat .messages{flex:1 1 0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;padding:14px;align-content:start}
+#section-chat .message{flex:0 0 auto;min-width:0;max-width:min(88%,700px);height:auto;overflow-wrap:anywhere;font-size:14px;line-height:1.55;white-space:pre-wrap}
+#section-chat .message.assistant{white-space:normal}
+#section-chat #chat-form{flex:0 0 auto;margin-top:10px;min-height:52px;position:relative!important;bottom:auto!important;padding:8px 0 0!important;background:#fff}
+#section-chat #chat-form input{font-size:16px;min-height:48px}
+#section-chat #chat-form button{min-height:48px}
+#mission-detail,#agent-detail,.detail{max-height:min(58dvh,470px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;overflow-wrap:anywhere;white-space:pre-wrap;scrollbar-gutter:stable}
+#mission-list,#search-results,#memory-list{max-height:min(44dvh,480px);overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:780px){
+ #section-chat .padded{height:calc(100dvh - 166px - env(safe-area-inset-bottom));max-height:none;min-height:0!important;padding:15px 13px!important;overflow:hidden}
+ #section-chat .padded>h1{font-size:22px;margin-bottom:2px}
+ #section-chat .padded>p{font-size:12px;margin-bottom:10px}
+ #section-chat .messages{padding:10px;gap:9px;border-radius:16px}
+ #section-chat .message{max-width:94%;font-size:14px;padding:11px 13px}
+ #section-chat #chat-form{display:flex;flex-wrap:nowrap;margin:0;padding:10px 0 0!important;gap:8px}
+ #section-chat #chat-form input{flex:1;min-width:0}
+ #section-chat #chat-form button{width:auto!important;min-width:78px;padding-inline:10px}
+ .quick-response{max-height:min(40dvh,310px)!important}
+}
