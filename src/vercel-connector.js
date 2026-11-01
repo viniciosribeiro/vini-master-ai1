@@ -25,7 +25,8 @@ export async function vercelRequest(token,endpoint,{method='GET',body,teamId,fet
  if(teamId){if(!/^team_[A-Za-z0-9]{8,80}$/.test(teamId))throw Error('Team ID Vercel inválido');url.searchParams.set('teamId',teamId);}
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
  try{
-  const response=await fetcher(url.href,{method,signal:controller.signal,redirect:'error',headers:{Authorization:'Bearer '+token,Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+  const response=await fetcher(url.href,{method,signal:controller.signal,redirect:'manual',headers:{Authorization:'Bearer '+token,Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+  if(response.status>=300&&response.status<400)throw Error('Redirecionamento inesperado da Vercel (HTTP '+response.status+'). A solicitação não foi seguida.');
   let data={};try{data=await response.json();}catch{}
   if(!response.ok)throw Error('Vercel HTTP '+response.status+': '+String(data.error?.message||data.message||'Não autorizado').slice(0,150));
   return data;
