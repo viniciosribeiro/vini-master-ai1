@@ -17,7 +17,7 @@ function officeNotice(event){
  window.setTimeout(()=>{if(toast.isConnected)toast.remove();},5400);
 }
 function renderOfficeLive(){
- const events=Array.isArray(state.activity)?state.activity:[];
+ const events=Array.isArray(window.jarvisLatestEvents)&&window.jarvisLatestEvents.length?window.jarvisLatestEvents:(Array.isArray(state.activity)?state.activity:[]);
  const jobs=Array.isArray(state.codeJobs)?state.codeJobs:[];
  const runningJob=jobs.find(j=>j.status==='working'&&realRecent(j.updated_at));
  const queuedJob=jobs.find(j=>j.status==='queued');
@@ -73,7 +73,7 @@ function renderOfficeLive(){
 
  }
  if(events.length){
-  const newest=Number(events[0].id)||0;
+  const newest=Math.max(...events.map(e=>Number(e.id)||0));
   if(lastEventSeen!==null&&newest>lastEventSeen){
    const arrived=events.filter(x=>Number(x.id)>lastEventSeen).reverse().slice(-2);
    if(arrived.length)officeNotice(arrived[arrived.length-1]);
