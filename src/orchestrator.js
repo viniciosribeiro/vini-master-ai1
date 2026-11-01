@@ -66,7 +66,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
    await db.prepare('INSERT INTO code_jobs(id,project_id,request,provider) VALUES(?,?,?,?)').bind(id,target.id,description,provider).run();
    try{
     await env.MISSIONS.create({id,params:{codeJobId:id}});
-    await db.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('supervisor','Delegou ao Programador: '+intent.title.slice(0,160)).run();
+    try{await db.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('supervisor','Delegou ao Programador: '+intent.title.slice(0,160)).run();}catch{ /* do not mark launched Workflow failed if telemetry logging fails */ }
     return {reply:'Entendi. Deleguei a implementação de **'+target.name+'** ao Programador. Você poderá acompanhar o código e a revisão no escritório. A entrega será um **pull request rascunho no GitHub**; não vou anunciar deploy em produção sem verificação.',delegation:{status:'queued',kind:'code',codeJobId:id,projectId:target.id,agents:['supervisor','programador'],title:intent.title}};
    }catch(e){
     await db.prepare("UPDATE code_jobs SET status='failed',detail=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind('Workflow não iniciou: '+String(e.message||e).slice(0,180),id).run();
@@ -83,7 +83,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
  await db.batch(intent.agents.map(agent=>db.prepare('INSERT INTO agent_runs(id,mission_id,agent_id) VALUES(?,?,?)').bind(crypto.randomUUID(),id,agent)));
  try{
   await env.MISSIONS.create({id,params:{missionId:id}});
-  await db.prepare('INSERT INTO activity(mission_id,agent_id,description) VALUES(?,?,?)').bind(id,'supervisor','Recebeu e distribuiu tarefa: '+intent.title.slice(0,160)).run();
+  try{await db.prepare('INSERT INTO activity(mission_id,agent_id,description) VALUES(?,?,?)').bind(id,'supervisor','Recebeu e distribuiu tarefa: '+intent.title.slice(0,160)).run();}catch{ /* Workflow already started; telemetry failure must not revoke it */ }
   const list=intent.agents.filter(a=>a!=='supervisor').map(a=>AGENTS.find(x=>x.id===a)?.name||a).join(', ');
   const note=writeIntent&&!await hasGitHub(db)?' O GitHub ainda não está conectado, portanto esta execução será uma análise; não haverá alteração de arquivos.':intent.codeRequested&&!target?' Não identifiquei um repositório único com segurança; a equipe fará a análise e preparação, sem alterar código.':'';
   return {reply:'Recebi a tarefa e abri uma **missão real**. Vou coordenar **'+list+'** e registrar cada etapa no Escritório e em Missões. Você pode continuar conversando comigo enquanto a equipe trabalha. As ações e os resultados aparecerão assim que forem registrados.'+note,delegation:{status:'queued',kind:'mission',missionId:id,agents:intent.agents,title:intent.title}};
