@@ -49,16 +49,17 @@ export async function handleAPI(req,env){
    return respond({active:!!item,step:item?item.step+1:null,total:5});
   }
   if(path==='/api/state'&&method==='GET'){
-   const [a,b,c,d,e,f,g]=await Promise.all([
+   const [a,b,c,d,e,f,g,h]=await Promise.all([
     env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
     env.DB.prepare("SELECT agent_id,status,provider,mission_id,output FROM agent_runs WHERE mission_id=(SELECT id FROM missions ORDER BY CASE WHEN status='running' THEN 0 WHEN status='queued' THEN 1 ELSE 2 END,created_at DESC LIMIT 1)").all(),
     env.DB.prepare('SELECT * FROM activity ORDER BY id DESC LIMIT 40').all(),
     env.DB.prepare('SELECT * FROM memories ORDER BY created_at DESC LIMIT 100').all(),
     env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first(),
     env.DB.prepare('SELECT (SELECT COUNT(*) FROM messages) messages,(SELECT COUNT(*) FROM missions) missions,(SELECT COUNT(*) FROM memories) memories').first(),
-    env.DB.prepare('SELECT id,project_id,request,status,detail,updated_at FROM code_jobs ORDER BY updated_at DESC LIMIT 12').all()
+    env.DB.prepare('SELECT id,project_id,request,status,detail,updated_at FROM code_jobs ORDER BY updated_at DESC LIMIT 12').all(),
+    env.DB.prepare("SELECT code_job_id,agent_id,status,detail,output,started_at,finished_at FROM code_agent_runs WHERE code_job_id=(SELECT id FROM code_jobs ORDER BY CASE WHEN status='working' THEN 0 WHEN status='queued' THEN 1 ELSE 2 END,updated_at DESC LIMIT 1)").all()
    ]);
-   return respond({missions:a.results||[],runs:b.results||[],activity:c.results||[],memories:d.results||[],provider:e?.value||'auto',counts:f,codeJobs:g.results||[],hasNvidia:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),hasCloudflare:!!env.AI?.run,agents:AGENTS});
+   return respond({missions:a.results||[],runs:b.results||[],activity:c.results||[],memories:d.results||[],provider:e?.value||'auto',counts:f,codeJobs:g.results||[],codeRuns:h.results||[],hasNvidia:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),hasCloudflare:!!env.AI?.run,agents:AGENTS});
   }
   if(path==='/api/providers'&&method==='GET')return respond({cloudflare:{configured:!!env.AI?.run,model:env.CF_AI_MODEL||'@cf/zai-org/glm-4.7-flash'},nvidia:{configured:!!env.NVIDIA_API_KEY||await hasStoredNvidia(env.DB),model:env.NVIDIA_MODEL||'nvidia/nemotron-3-ultra-550b-a55b'}});
   if(path==='/api/providers/test'&&method==='POST'){
