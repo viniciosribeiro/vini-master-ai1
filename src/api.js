@@ -1,3 +1,4 @@
+import {readExecutionLedger} from './execution-ledger.js';
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {readLiveEvents} from './live-events.js';
 import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
@@ -51,6 +52,7 @@ export async function handleAPI(req,env){
    return respond({active:!!item,step:item?item.step+1:null,total:5});
   }
   if(path==='/api/live'&&method==='GET')return respond(await readLiveEvents(env.DB,{after:url.searchParams.get('after'),limit:url.searchParams.get('limit')}));
+  if(path==='/api/evidence'&&method==='GET')return respond({items:await readExecutionLedger(env.DB),generatedAt:new Date().toISOString()});
   if(path==='/api/state'&&method==='GET'){
    const [a,b,c,d,e,f,g,h]=await Promise.all([
     env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
