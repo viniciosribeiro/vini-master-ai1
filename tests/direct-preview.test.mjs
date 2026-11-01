@@ -10,10 +10,10 @@ const html=read('public/index.html'),sw=read('public/sw.js'),worker=read('src/in
 
 test('Direct Vercel preview frontend loads as independent module after voice studio',()=>{
  assert.doesNotThrow(()=>new Script(frontend));
- assert.ok(html.indexOf('vini-direct-preview.js?v=20')>html.indexOf('vini-voice-live.js?v=18'));
+ assert.ok(html.indexOf('vini-direct-preview.js?v=20')>html.indexOf('vini-voice-live.js?v=24'));
  assert.match(sw,/vini-direct-preview\.js/);
- assert.match(sw,/vini-master-shell-v20/);
- assert.match(worker,/version:'0\.17\.2'/);
+ assert.match(sw,/vini-master-shell-v24/);
+ assert.match(worker,/version:'0\.17\.5'/);
  assert.ok(css.includes('.vini-direct-lab'));
 });
 test('API requires original session, same-origin and explicit preview confirmation',()=>{
