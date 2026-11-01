@@ -183,7 +183,7 @@ $('access-form').addEventListener('submit',async e=>{
   sessionStorage.setItem(storageKey,token);
   $('access-dialog').close();
   updateStatus();notify('Acesso validado. Painel conectado com segurança.');
-  await refresh();await loadChat();
+  await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
  }catch(err){
   clearInvalidSession();
   error.textContent=err.message+' Se você acabou de alterar o segredo, confirme que foi salvo em Produção e use exatamente o mesmo valor aqui.';
@@ -234,7 +234,7 @@ async function initializeAccess(){
  try{
   await verifyAccess(token);
   authValidated=true;updateStatus();
-  await refresh();await loadChat();
+  await refresh();await loadChat();if(typeof checkIdeaAlerts==='function')checkIdeaAlerts();
  }catch(err){
   clearInvalidSession();
   openAccess('A sessão antiga não foi aceita. Digite novamente o MASTER_TOKEN do painel. '+err.message);
