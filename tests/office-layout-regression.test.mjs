@@ -39,11 +39,11 @@ test('Navigation still exposes agents and office on mobile',()=>{
  assert.match(css,/\.sidebar \.nav\[data-section="agents"\]\{display:flex!important\}/);
 });
 test('Old PWA cache cannot keep previous broken reference styles',()=>{
- assert.match(sw,/vini-master-shell-v21/);
+ assert.match(sw,/vini-master-shell-v22/);
  assert.match(html,/vini-reference\.js\?v=21/);
  assert.match(html,/vini-reference\.css\?v=21/);
- assert.match(html,/Control Center R3 0\.17\.3/);
- assert.match(worker,/version:'0\.17\.3'/);
+ assert.match(html,/Control Center R3 0\.17\.4/);
+ assert.match(worker,/version:'0\.17\.4'/);
 });
 test('No destructive data or secret change in visual rollback',()=>{
  assert.match(worker,/officeAgentsRestored:true/);
