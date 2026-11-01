@@ -1,3 +1,4 @@
+import {saveDeploymentLinks,syncProjectDeployments} from './deployments.js';
 import {setupIntakes,handleIntake} from './intake.js';
 import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
@@ -150,6 +151,19 @@ export async function handleAPI(req,env){
     const data=await parse(req);
     try{return respond(await permanentlyDeleteProject(env.DB,id,String(data.confirm||'')));}
     catch(e){return fail(String(e.message||e));}
+   }
+   if(action==='deploy'&&method==='PUT'){
+    if(row.status==='trashed')return fail('Restaure o projeto antes de editar seus links.',409);
+    try{return respond(await saveDeploymentLinks(env.DB,id,await parse(req)));}
+    catch(e){return fail(String(e.message||e),400);}
+   }
+   if(action==='deployments'&&method==='POST'){
+    if(!row.repo)return fail('Vincule o GitHub ao projeto antes de sincronizar deployments.',409);
+    const token=await readGitHub(env);if(!token)return fail('Conecte o GitHub em Configurações.',409);
+    try{
+     const result=await syncProjectDeployments(env.DB,token,row);
+     return respond({result,project:await getProject(env.DB,id)});
+    }catch(e){return fail(String(e.message||e).slice(0,170),503);}
    }
    if(action==='ideas'&&method==='POST'){
     if(row.status!=='active')return fail('Ative o projeto antes de gerar ideias.',409);
