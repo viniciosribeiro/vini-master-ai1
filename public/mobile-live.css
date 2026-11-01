@@ -160,3 +160,47 @@ dialog:not(.agent-sheet){width:min(95vw,480px);padding:23px;border-radius:20px}.
 .work-profile button{min-height:46px;white-space:normal}
 #work-profile-feedback{font-size:.85rem;line-height:1.5;color:#405983;margin-top:8px}
 @media(max-width:380px){.work-profile-actions{grid-template-columns:1fr}}
+
+
+/* Operação real: falas e pequenos movimentos apenas quando o D1 registra trabalho. */
+.office-work-summary{margin:0 12px 8px;padding:9px 12px;border-radius:12px;background:#f1f5ff;color:#53627e;font-size:12px;line-height:1.4}
+.station .agent-popup{position:absolute;bottom:7px;left:7px;right:7px;z-index:5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:6px 8px;background:#f7faffed;color:#4c6284;border:1px solid #d9e5f5;border-radius:10px;font-size:10px;font-weight:650;line-height:1.3;pointer-events:none;box-shadow:0 3px 14px #17294b17}
+.station .agent-popup[data-active=true]{background:#e4faf1;border-color:#a5eac8;color:#137b57;animation:workGlow 1.8s ease-in-out infinite}
+.station[data-status=working] .mini-person{animation:workerMove 1.3s ease-in-out infinite alternate}
+.station[data-status=working] .screen{animation:screenGlow 1.3s ease-in-out infinite alternate}
+.station[data-status=working] .station-art svg{animation:workerMove 1.45s ease-in-out infinite alternate}
+.station[data-status=idle] .mini-person,.station[data-status=idle] .station-art svg{animation:none}
+.office-action-toast{position:fixed;z-index:150;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,390px);border:1px solid #b6d8ff;border-radius:16px;background:#fffffff5;color:#233c64;box-shadow:0 15px 40px #193b6b35;padding:12px 14px;display:grid;gap:4px;animation:toastAppear .25s ease-out}
+.office-action-toast strong{font-size:12px}
+.office-action-toast span{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+@keyframes workerMove{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+@keyframes screenGlow{from{filter:brightness(1)}to{filter:brightness(1.23)}}
+@keyframes workGlow{50%{box-shadow:0 0 0 4px #2bc79724}}
+@keyframes toastAppear{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+.project-deployments{border:1px solid #dce7f8;background:#f6f9ff;border-radius:17px;padding:15px;margin:14px 0;display:grid;gap:11px}
+.project-deployments>p{font-size:12px;color:#5e728c;line-height:1.5}
+.project-deployments form{display:grid;gap:10px}
+.project-deployments label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:650;color:#3c5578}
+.project-deployments input{font-size:16px;max-width:100%;min-height:46px;min-width:0}
+.project-deployments button{min-height:44px}
+.deploy-links{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))}
+.deploy-link{display:grid;gap:4px;padding:11px 12px;border:1px solid #b9d9ed;border-radius:12px;background:#fff;color:#244d88;text-decoration:none;overflow-wrap:anywhere;min-width:0}
+.deploy-link strong{font-size:13px}
+.deploy-link small{font-size:11px;color:#69819f}
+.deploy-go{font-size:11px;font-weight:750;color:#2869c1}
+.projects-tools{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.projects-tools button{min-height:44px}
+.install-vini{border:0;border-radius:12px;background:#e9f1ff;color:#2c5db0;min-height:42px;padding:8px 10px;font-size:12px;font-weight:750;white-space:nowrap}
+.install-vini[hidden],.intake-start-now[hidden]{display:none!important}
+.begin-project-chat,.intake-start-now{width:100%;min-height:45px;margin:4px 0 12px}
+@media(max-width:780px){
+ .office-work-summary{margin:0 13px 8px}
+ .station .agent-popup{font-size:9px;bottom:5px;line-height:1.25;padding:5px 6px}
+ .station.supervisor .agent-popup{font-size:11px}
+ .office .stage .station{padding-bottom:44px!important}
+ .office .stage .station.supervisor{padding-bottom:46px!important}
+ .install-vini{font-size:11px;padding-inline:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .station[data-status=working] .mini-person,.station[data-status=working] .station-art svg,.office-action-toast,.station .agent-popup{animation:none!important}
+}
