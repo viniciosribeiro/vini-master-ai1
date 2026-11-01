@@ -35,7 +35,7 @@ export function cleanChatHtml(value){
 }
 export function deploymentContext(verifiedProjects){
  const projects=Array.isArray(verifiedProjects)?verifiedProjects:[];
- return projects.map(p=>p.name+': '+p.deploy_url+' (HTTP verificado em '+p.deploy_verified_at+')').join('\n').slice(0,3500);
+ return projects.flatMap(p=>[p.deploy_status==='online'&&p.deploy_url?p.name+' (produção): '+p.deploy_url+' (HTTP verificado em '+p.deploy_verified_at+')':null,p.preview_status==='online'&&p.preview_url?p.name+' (prévia): '+p.preview_url+' (HTTP verificado em '+p.preview_verified_at+')':null].filter(Boolean)).join('\n').slice(0,3500);
 }
 export function guardChatDeployment(raw,verifiedProjects=[]){
  let text=cleanChatHtml(raw);
