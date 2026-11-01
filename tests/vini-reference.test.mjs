@@ -24,7 +24,7 @@ test('all 4 cropped assets from approved reference exist and are genuine WebP',(
 test('R2 CSS loads after legacy and R1 styling and works offline in PWA',()=>{
  assert.ok(html.indexOf('/vini-reference.css')>html.indexOf('/vini-control.css'));
  assert.ok(html.indexOf('/vini-reference.js')>html.indexOf('/vini-control.js'));
- assert.match(sw,/vini-master-shell-v17/);
+ assert.match(sw,/vini-master-shell-v22/);
  assert.match(html,/Control Center R2 0\.16\.1/);
  assert.match(text('src/index.js'),/version:'0\.16\.1'/);
 });
