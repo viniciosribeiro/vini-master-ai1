@@ -4,6 +4,7 @@ import {saveVercelToken,readVercelToken,disconnectVercel,testVercelToken,getVerc
 import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {isWorkStatusConcern,readWorkStatus,workStatusReply} from './work-status.js';
 import {listThreads,createThread,getThread,chooseThread,updateThread,removeThread,getThreadMessages,saveThreadMessage,chatTitle} from './chat-threads.js';
+import {wantsNewProject} from './intake.js';
 import {readLiveEvents} from './live-events.js';
 import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
 import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
@@ -334,6 +335,11 @@ export async function handleAPI(req,env){
    const thread=await chooseThread(env.DB,String(data.threadId||''));
    if(!thread.project_id&&!thread.is_draft&&thread.id==='legacy-history')return fail('Vincule o histórico anterior a um projeto antes de continuar.',409);
    const threadId=thread.id;
+   if(thread.is_draft&&!thread.project_id&&!wantsNewProject(message)){
+    await setupIntakes(env.DB);
+    const active=await env.DB.prepare("SELECT id FROM project_intakes WHERE status='collecting' AND thread_id=? LIMIT 1").bind(threadId).first();
+    if(!active)return fail('Esta conversa é para criar um novo projeto. Inicie a entrevista ou vincule a conversa a um projeto existente.',409);
+   }
    const first=await env.DB.prepare('SELECT COUNT(*) AS n FROM messages WHERE thread_id=?').bind(threadId).first();
    if(Number(first?.n||0)===0&&/^nova conversa$/i.test(thread.title))await env.DB.prepare('UPDATE chat_threads SET title=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(chatTitle(message),threadId).run();
    const current=await env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first();
