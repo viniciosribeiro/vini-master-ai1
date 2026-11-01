@@ -6,7 +6,8 @@
     "directory": "./public",
     "binding": "ASSETS",
     "run_worker_first": [
-      "/api/*"
+      "/api/*",
+      "/agents/*"
     ]
   },
   "ai": {
@@ -36,5 +37,24 @@
       "0 12 * * *",
       "0 11 * * 1"
     ]
-  }
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ViniVoiceAgent",
+        "class_name": "ViniVoiceAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "vini_voice_v1",
+      "new_sqlite_classes": [
+        "ViniVoiceAgent"
+      ]
+    }
+  ]
 }
