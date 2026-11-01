@@ -246,7 +246,7 @@ export async function handleAPI(req,env){
     env.DB.prepare("SELECT name,description,platform,repo FROM projects WHERE status='active' ORDER BY updated_at DESC LIMIT 20").all(),
     env.DB.prepare("SELECT action,description FROM project_events ORDER BY id DESC LIMIT 25").all(),
     readProfile(env.DB),
-    env.DB.prepare("SELECT name,deploy_url,preview_url,deploy_verified_at FROM projects WHERE status='active' AND deploy_status='online' AND deploy_url<>'' ORDER BY deploy_verified_at DESC LIMIT 15").all()
+    env.DB.prepare("SELECT name,deploy_url,deploy_status,deploy_verified_at,preview_url,preview_status,preview_verified_at FROM projects WHERE status='active' AND (deploy_status='online' OR preview_status='online') ORDER BY updated_at DESC LIMIT 15").all()
    ]);
    const context=(pinned.results||[]).map(x=>'- '+x.content.slice(0,600)).join('\n').slice(0,8000);
    const old=relevant.filter(x=>x.content!==message).map(x=>'- '+x.content.slice(0,500)).join('\n').slice(0,5000);
