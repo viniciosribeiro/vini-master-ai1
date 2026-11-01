@@ -174,7 +174,8 @@ function renderDelegationStatus(){
   const active=runs.filter(x=>x.status==='working').length,done=runs.filter(x=>x.status==='done').length;
   text.textContent=m.status==='queued'?'Missão na fila: '+m.title:'Equipe trabalhando em "'+m.title+'": '+active+' ativo(s), '+done+' concluído(s)';
  }else if(job){
-  text.textContent=job.status==='queued'?'Programação na fila: '+job.request.slice(0,75):'Programador trabalhando: '+job.detail.slice(0,100);
+  const specialists=(state.codeRuns||[]),working=specialists.filter(r=>r.status==='working').length,done=specialists.filter(r=>r.status==='done').length;
+  text.textContent=job.status==='queued'?'Equipe de código na fila: '+job.request.slice(0,75):'Equipe de código: '+working+' trabalhando, '+done+' concluído(s) · '+job.detail.slice(0,85);
  }
 }
 $('jarvis-task-open')?.addEventListener('click',()=>show('office'));
