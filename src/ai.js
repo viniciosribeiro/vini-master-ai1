@@ -15,16 +15,15 @@ export function searchTerms(input){
  return a.slice(0,7).map(x=>String.fromCharCode(34)+x+String.fromCharCode(34)).join(' OR ');
 }
 export function cleanAnswer(input){
- let result=String(input||'');
- // Nemotron e outros modelos podem devolver blocos de raciocínio; eles não fazem parte da resposta ao usuário.
- result=result.replace(/<think>[\\s\\S]*?<\\/think>/gi,'').replace(/<analysis>[\\s\\S]*?<\\/analysis>/gi,'');
- return result.trim();
+ const result=String(input||'');
+ // Blocos de pensamento do modelo nao sao mensagens para o usuario.
+ return result.replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/<analysis>[\s\S]*?<\/analysis>/gi,'').trim();
 }
 export function asText(result){
  if(typeof result?.response==='string')return cleanAnswer(result.response);
  if(typeof result?.result==='string')return cleanAnswer(result.result);
  const content=result?.choices?.[0]?.message?.content;
- return cleanAnswer(typeof content==='string'?content:Array.isArray(content)?content.map(x=>x.text||'').join('\\n'):'');
+ return cleanAnswer(typeof content==='string'?content:Array.isArray(content)?content.map(x=>x.text||'').join('\n'):'');
 }
 export async function callAI(env,messages,choice='auto'){
  const engines=normalizeProvider(choice)==='auto'?['cloudflare','nvidia']:[normalizeProvider(choice)];
