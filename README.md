@@ -1,3 +1,14 @@
+# VINI MASTER AI 0.14.0 — Escolha livre de modelo de linguagem
+
+- O Workers AI oferece muitos modelos além do GLM-4.7 Flash. O seletor em Configurações → Inteligências artificiais lista 13 opções com sugestões de uso e permite digitar qualquer ID de modelo de geração de texto compatível com Workers AI (@cf/fabricante/modelo).
+- É possível selecionar modelos Qwen3, GPT-OSS 20B/120B, Llama 3.3/4, Gemma 4, DeepSeek, Nemotron e GLM; modelos premium ou IDs personalizados exigem confirmação explícita de eventual cobrança antes do teste.
+- A ativação realiza uma chamada real no Workers AI e só persiste a seleção caso obtenha resposta, mantendo o modelo antigo em caso de falha. As preferências cf_model e nvidia_model são salvas em settings no Cloudflare D1, prevalecendo sobre o CF_AI_MODEL do wrangler.
+- A escolha do modelo Cloudflare ou NVIDIA também ajusta a preferência de provedor. Conversas e especialistas compartilham o modelo configurado; o usuário ainda pode escolher Automático (fallback Cloudflare → NVIDIA).
+- Botão de escolha diretamente no Chat e link para o catálogo oficial. Há aviso de alocação de 10.000 Neurons/dia gratuitos e dos modelos que exigem plano pago ou créditos AI Gateway.
+- A NVIDIA pode receber manualmente outro ID fabricante/modelo, desde que a API esteja conectada e o teste passe.
+- Esta fase suporta modelos de geração de texto; visão, áudio, imagens e multimodal necessitam fluxos próprios. O seletor não garante acesso, gratuitamente, a qualquer modelo premium, nem altera a autenticação das plataformas.
+- Cobertura em tests/model-selector.test.mjs, além das verificações dos endpoints de modelo e da integração na geração.
+
 # VINI MASTER AI 0.13.0 — Conversas organizadas como ChatGPT por projeto
 
 - Cada conversa nova tem um identificador D1 e pertence a um projeto ativo. O chat carrega apenas mensagens da conversa escolhida e trechos relevantes de outras conversas **do mesmo projeto**; não mistura mensagens de projetos diferentes em contexto da IA.
