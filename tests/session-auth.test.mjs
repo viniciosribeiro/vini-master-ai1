@@ -30,7 +30,8 @@ test('cookie authenticated POST requires a matching Origin',async()=>{
 test('cookie cannot be forged or reused after rotating the master secret',async()=>{
  const issued=await issueCookie(env,{remember:true});
  const value=issued.cookie.split(';')[0];
- const modified=value.slice(0,-1)+(value.endsWith('A')?'B':'A');
+ const pos=value.lastIndexOf('.')+1;
+ const modified=value.slice(0,pos)+(value[pos]==='A'?'B':'A')+value.slice(pos+1);
  assert.equal(await verifyCookie(mock('GET',modified),env),false);
  assert.equal(await verifyCookie(mock('GET',value),{MASTER_TOKEN:env.MASTER_TOKEN+'rotated'}),false);
  assert.match(expireCookie(),/Max-Age=0/);
