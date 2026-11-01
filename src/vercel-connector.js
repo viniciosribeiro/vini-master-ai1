@@ -54,8 +54,10 @@ export async function initiatePreviewRedeploy(env,projectId,deploymentId,teamId,
  const source=deployments.find(d=>d.id===deploymentId&&d.projectId===projectId);
  if(!source)throw Error('Deployment de origem não encontrado neste projeto');
  const token=await readVercelToken(env);
- const data=await vercelRequest(token,'/v13/deployments',{method:'POST',teamId,fetcher,body:{name:project.name,project:projectId,deploymentId:source.id,target:'preview'}});
+ // Vercel deployment API: omit target to request a preview; NEVER pass production here.
+ const data=await vercelRequest(token,'/v13/deployments',{method:'POST',teamId,fetcher,body:{name:project.name,project:projectId,deploymentId:source.id}});
  if(!/^dpl_[A-Za-z0-9]{8,80}$/.test(data.id||''))throw Error('A Vercel não devolveu um identificador de deployment válido; confira o painel.');
+ if(data.target==='production')throw Error('A Vercel retornou destino produção inesperadamente: confira o deployment no painel antes de continuar.');
  return {id:data.id,projectId,name:project.name,url:data.url||'',status:data.readyState||data.status||'QUEUED',target:'preview',sourceDeploymentId:source.id};
 }
 export async function vercelDeploymentStatus(env,id,teamId,fetcher=fetch){
