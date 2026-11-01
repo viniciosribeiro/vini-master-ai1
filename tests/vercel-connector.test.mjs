@@ -35,3 +35,13 @@ test('VINI does not claim to rebuild before Vercel confirms execution',()=>{
  assert.match(guarded.text,/Não executei esse build/);
  assert.equal(isUnsupportedDeploymentRequest('Force o build na Vercel'),true);
 });
+
+test('Workers-compatible manual redirect never follows bearer token to another host',async()=>{
+ let redirectMode='';
+ const fetcher=async (_url,init)=>{
+  redirectMode=init.redirect;
+  return response(302,{error:{message:'Unexpected redirect'}});
+ };
+ await assert.rejects(()=>vercelRequest('test-token','/v2/user',{fetcher}),/Redirecionamento inesperado/);
+ assert.equal(redirectMode,'manual');
+});
