@@ -6,20 +6,29 @@ const EXPLICIT_DEPLOY_REQUEST=/\b(?:for[cç](?:ar|a|e)|dispar(?:ar|e)|rod(?:ar|e
 const REPAIR_INTENT=/\b(?:fix|consert|corrig|erro|bug|falha)\w*/iu;
 export function isUnsupportedDeploymentRequest(message){
  const input=String(message||'').trim();
- if(input.length<9||/^\s*(?:como|por\s+que|qual|quais|quando|onde|o\s+que)\b/iu.test(input))return false;
+ if(input.length<9)return false;
+ // Do not convert questions, quoted examples or complaints about failed work into deploy requests.
+ if(/^\s*(?:como|por\s+que|qual|quais|quando|onde|o\s+que|voc[eê]\s+(?:disse|falou|prometeu)|ele\s+(?:disse|falou|prometeu))\b/iu.test(input))return false;
+ if(/\b(?:n[aã]o\s+(?:executou|publicou|fez|disparou|funcionou|aconteceu)|s[oó]\s+(?:fala|promete)|sem\s+resultado|sem\s+fazer)\b/iu.test(input))return false;
  if(!/\b(?:vercel|deploy|build|redeploy|publica[cç][aã]o)\b/iu.test(input))return false;
- return EXPLICIT_DEPLOY_REQUEST.test(input) && !/^\s*n[aã]o\s+(?:fa[cç]a|execute|publique|rode|force)\b/iu.test(input);
+ if(/^\s*n[aã]o\s+(?:fa[cç]a|execute|publique|rode|force)\b/iu.test(input))return false;
+ // Only an explicit current instruction may trigger the deployment integration gate.
+ const request=/^\s*(?:(?:por\s+favor[,:]?\s*)?(?:fa[cç]a|force|for[cç]ar|dispare|disparar|rode|rodar|execute|executar|refa[cç]a|refazer|reinicie|reiniciar|publique|publicar|implante|implantar|crie|criar|inicie|iniciar)|(?:quero|preciso|pode|consegue|gostaria)\s+(?:(?:que\s+)?(?:voc[eê]\s+)?)?(?:fa[cç]a|fazer|force|for[cç]ar|dispare|disparar|rode|rodar|execute|executar|refa[cç]a|refazer|reinicie|reiniciar|publique|publicar|implante|implantar|crie|criar|inicie|iniciar))\b/iu;
+ return request.test(input);
 }
 export function guardUnsupportedActionClaims(raw){
  const input=String(raw||'');
- // This function only runs on unconstrained LLM conversational text, not on proof-bearing API results.
- const sentences=input.split(/(?<=[.!?\n])\s+/u);
- const promises=sentences.filter(s=>ACTION_VERB.test(s)&&EXECUTION_VERB.test(s)&&EXTERNAL_SUBJECT.test(s));
- if(!promises.length)return {text:input,intercepted:false};
- return {
-  text:'Não executei esse build. A resposta anterior prometeu uma ação sem comprovante, então foi bloqueada. Para reconstruir uma prévia real, abra a conexão Vercel e selecione o projeto. Não vou afirmar que foi publicado antes de receber um ID de deployment.',
-  intercepted:true,reason:'unverified_execution_claim'
- };
+ // Strip only unsupported first-person claims; never substitute an unrelated Vercel script.
+ const fragments=input.split(/(?<=[.!?\n])\s+/u);
+ const unsupported=fragments.filter(part=>{
+  const sentence=part.trim();
+  if(/^\s*(?:n[aã]o|nem|nunca|sem)\b/iu.test(sentence)||/\b(?:n[aã]o\s+(?:vou|fiz|executei|publiquei|consigo)|sem\s+(?:executar|publicar))\b/iu.test(sentence))return false;
+  return ACTION_VERB.test(sentence)&&EXECUTION_VERB.test(sentence)&&EXTERNAL_SUBJECT.test(sentence);
+ });
+ if(!unsupported.length)return {text:input,intercepted:false};
+ const safe=fragments.filter(s=>!unsupported.includes(s)).join(' ').trim();
+ const notice='Não executei ações externas nesta resposta. Removi uma afirmação de execução sem comprovante.';
+ return {text:safe?notice+'\n\n'+safe:notice+' Consulte o Diário da equipe e os Comprovantes para verificar o que realmente aconteceu.',intercepted:true,reason:'unverified_execution_claim'};
 }
 export function executionReceipt(result){
  if(result?.delegation){
