@@ -89,9 +89,17 @@ export async function initiateDirectStaticPreview(env,files,teamId='',fetcher=fe
  if(total>20000)throw Error('A prévia excedeu 20 KB; arquivos maiores exigem o pipeline de build/cloud.');
  const token=await readVercelToken(env);if(!token)throw Error('Conecte a Vercel nas Configurações antes da prévia direta.');
  const name='vini-agent-preview-lab';
- // No gitSource, deploymentId, target, alias, env or secrets: strict preview-only upload.
+ // Vercel categorizes the FIRST deploy of a NEW project as production even when target
+ // is omitted. NEVER create the preview lab implicitly from this route.
+ const existingProjects=await getVercelProjects(env,teamId,fetcher);
+ const lab=existingProjects.find(p=>p.name===name);
+ if(!lab)throw Error('Laboratório de prévias não existe. A criação inicial de projeto é bloqueada porque a Vercel poderia classificar o primeiro deploy como produção.');
+ const history=await getVercelDeployments(env,lab.id,teamId,fetcher);
+ if(!history.some(d=>d.target==='production'))throw Error('Prévia direta bloqueada: não foi possível provar que este projeto já passou pela etapa inicial de implantação. Não será arriscado um deploy de produção.');
+ // Only an EXISTING dedicated lab is eligible. Omit target to use Vercel Preview on it.
+ // Never set production target, alias, gitSource, env, or deploymentId.
  const response=await vercelRequest(token,'/v13/deployments',{method:'POST',teamId,fetcher,body:{
-  name,files:validated,projectSettings:{framework:null},meta:{viniSource:'direct-static-preview'}
+  name,project:lab.id,files:validated,meta:{viniSource:'direct-static-preview'}
  }});
  const id=String(response.id||''),url=String(response.url||'');
  if(!/^dpl_[a-zA-Z0-9]{8,80}$/.test(id))throw Error('Vercel não confirmou um ID válido. Confira o dashboard antes de repetir.');
