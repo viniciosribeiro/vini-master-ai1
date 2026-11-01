@@ -35,7 +35,12 @@ export async function callAI(env,messages,choice='auto'){
    if(engine==='cloudflare'){
     if(!env.AI?.run)throw Error('Workers AI indisponível');
     model=await configuredModel(env,'cloudflare');
-    text=asText(await env.AI.run(model,{messages,max_tokens:1400,chat_template_kwargs:{enable_thinking:false}}));
+    // Some chat-completions models use max_completion_tokens, while classic Workers AI models use max_tokens.
+    const modern=/^@cf\/(?:zai-org\/glm-|nvidia\/nemotron-)/.test(model);
+    const parameters=modern?
+     {messages,max_completion_tokens:1400,chat_template_kwargs:{enable_thinking:false}}:
+     {messages,max_tokens:1400};
+    text=asText(await env.AI.run(model,parameters));
    }else{
     const nvidiaSecret=await loadNvidia(env);
     if(!nvidiaSecret)throw Error('Conecte sua chave NVIDIA nas Configurações');
