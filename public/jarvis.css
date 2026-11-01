@@ -267,3 +267,90 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
 #section-office .station .jarvis-unit{order:0}
 #section-office .station .station-label{order:1}
 #section-office .station .agent-popup{order:2}
+
+
+/* Robot 0.6: eyes, antennae, arms, mouth and state expressions.
+   Idle motion is ambient only; working/success/error/wait use real D1 telemetry. */
+.jarvis-unit .rb-head,.jarvis-hero-unit .rb-head{transform-origin:50% 88%;animation:robotLookAround 7.1s ease-in-out infinite}
+.jarvis-unit .rb-antenna,.jarvis-hero-unit .rb-antenna{transform-origin:bottom center;animation:robotAntenna 3.8s ease-in-out infinite}
+.jarvis-unit .rb-eye,.jarvis-hero-unit .rb-eye{position:relative;height:12px;width:12px;border-radius:45%;border:0;background:var(--bot,#3ee7ff);box-shadow:0 0 8px var(--bot,#3ee7ff);animation:robotBlink 5.8s ease-in-out infinite}
+.jarvis-unit .rb-eye:nth-child(3),.jarvis-hero-unit .rb-eye:nth-child(3){animation-delay:.09s}
+.jarvis-unit .rb-smile,.jarvis-hero-unit .rb-smile{width:12px;height:8px;border:0;border-bottom:2.5px solid var(--bot,#3ee7ff);box-shadow:0 3px 5px #00cff344;border-radius:0 0 50% 50%;transform:translateY(8px)}
+.jarvis-unit .rb-body:before,.jarvis-unit .rb-body:after,.jarvis-hero-unit .rb-body:before,.jarvis-hero-unit .rb-body:after{
+ content:"";position:absolute;top:2px;width:10px;height:23px;border-radius:8px;
+ border:2px solid #8bbbdc;background:linear-gradient(130deg,#a3d6f2,#6a8dad);
+ transform-origin:top center
+}
+.jarvis-unit .rb-body:before,.jarvis-hero-unit .rb-body:before{left:-12px;animation:robotArmLeft 6s ease-in-out infinite}
+.jarvis-unit .rb-body:after,.jarvis-hero-unit .rb-body:after{right:-12px;animation:robotArmRight 5.2s ease-in-out infinite}
+.jarvis-unit[data-expression=working] .rb-body:before,.jarvis-unit[data-expression=working] .rb-body:after{animation:robotTyping .43s ease-in-out infinite alternate}
+.jarvis-unit[data-expression=working] .rb-body:after{animation-delay:-.23s}
+.jarvis-unit[data-expression=working] .rb-eye,.jarvis-hero-unit[data-expression=thinking] .rb-eye{height:7px;transform:translateY(2px);border-radius:4px;animation:robotFocusEyes 1.3s ease-in-out infinite alternate}
+.jarvis-unit[data-expression=working] .rb-smile,.jarvis-hero-unit[data-expression=thinking] .rb-smile{border-radius:0;border-bottom:2px solid #93efff;width:9px;height:3px;transform:translateY(7px)}
+.jarvis-unit[data-expression=success] .rb-smile{width:18px;height:10px;border-bottom:4px solid #48ffc3;transform:translateY(6px)}
+.jarvis-unit[data-expression=success] .rb-antenna:before{background:#52f5b0;box-shadow:0 0 15px #53ffd6}
+.jarvis-unit[data-expression=success] .rb-head{animation:robotCelebrate 1.1s ease-out 3}
+.jarvis-unit[data-expression=success] .rb-body:before,.jarvis-unit[data-expression=success] .rb-body:after{animation:robotCelebrateArms .8s ease-in-out 3}
+.jarvis-unit[data-expression=error] .rb-head{transform:rotate(-9deg)}
+.jarvis-unit[data-expression=error] .rb-eye{background:#ffa474;box-shadow:0 0 8px #ef845c}
+.jarvis-unit[data-expression=error] .rb-smile{width:11px;height:8px;border-bottom:0;border-top:3px solid #ffa474;border-radius:50% 50% 0 0;transform:translateY(8px)}
+.jarvis-unit[data-expression=error] .rb-antenna:before{background:#ff9865;box-shadow:0 0 10px #ff9865}
+.jarvis-unit[data-expression=waiting] .rb-eye{background:#f6ca77;box-shadow:0 0 9px #f6ca77}
+.jarvis-unit[data-expression=waiting] .rb-antenna:before{background:#f6ca77;animation:robotWaiting 2s ease-in-out infinite}
+.jarvis-hero-unit[data-expression=listening] .rb-eye{background:#64ffc3;box-shadow:0 0 9px #64ffc3}
+.jarvis-hero-unit[data-expression=listening] .rb-antenna:before{animation:robotWaiting .8s ease-in-out infinite;background:#64ffc3}
+.jarvis-hero-unit[data-expression=speaking] .rb-smile{animation:robotTalk .25s ease-in-out infinite alternate;border:2px solid #75eaff;border-radius:50%;width:9px;height:7px}
+.jarvis-hero-unit[data-expression=speaking] .rb-head{animation:robotTalkHead 1.2s ease-in-out infinite}
+.jarvis-unit[data-expression=working] .rb-aura{opacity:.46}
+#section-office .station{transition:border-color .2s ease,box-shadow .3s ease}
+#section-office .station[data-expression=working]{border-color:#4fe0c3!important;box-shadow:0 0 22px #20d3c82b!important}
+#section-office .station[data-expression=success]{border-color:#2bbb94!important}
+#section-office .station[data-expression=error]{border-color:#d77c65!important}
+#section-office .station[data-expression=waiting]{border-color:#dbaf65!important}
+@keyframes robotBlink{0%,44%,48%,100%{transform:scaleY(1)}45%,47%{transform:scaleY(.11)}}
+@keyframes robotLookAround{0%,22%,70%,100%{transform:rotate(0)}34%,42%{transform:rotate(-7deg)}52%,60%{transform:rotate(6deg)}}
+@keyframes robotAntenna{0%,100%{transform:rotate(0)}45%{transform:rotate(12deg)}75%{transform:rotate(-9deg)}}
+@keyframes robotArmLeft{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
+@keyframes robotArmRight{0%,100%{transform:rotate(0)}50%{transform:rotate(-12deg)}}
+@keyframes robotTyping{from{transform:rotate(-11deg) translateY(0)}to{transform:rotate(18deg) translateY(-5px)}}
+@keyframes robotFocusEyes{from{transform:translateY(1px) translateX(-3px)}to{transform:translateY(1px) translateX(3px)}}
+@keyframes robotCelebrate{0%,100%{transform:rotate(0)}35%{transform:rotate(11deg)}65%{transform:rotate(-11deg)}}
+@keyframes robotCelebrateArms{0%,100%{transform:rotate(0)}50%{transform:rotate(-115deg)}}
+@keyframes robotWaiting{50%{filter:brightness(1.8)}}
+@keyframes robotTalk{from{height:4px}to{height:12px}}
+@keyframes robotTalkHead{0%,100%{transform:rotate(0)}50%{transform:rotate(4deg)}}
+/* Prevent hologram from floating across chat messages on mobile. */
+.jarvis-chat-hero{overflow:hidden!important;isolation:isolate;max-width:100%}
+.jarvis-chat-hero .jarvis-core{flex:0 0 auto;position:relative}
+.jarvis-chat-hero .jarvis-core-ring{position:relative}
+.jarvis-chat-hero .jarvis-hero-unit{position:absolute;inset:0;margin:auto;z-index:2;pointer-events:none}
+.jarvis-chat-hero .jarvis-hero-unit .rb-figure{top:14px}
+#section-chat .messages{min-height:0!important;max-width:100%;contain:layout;scroll-behavior:smooth}
+#section-chat .message{max-width:100%;width:fit-content;max-height:none;min-width:0;contain:layout}
+#section-chat .message .reply-body{max-width:100%;overflow-wrap:anywhere}
+#section-chat .message .reply-paragraph{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
+#section-chat .message .deploy-chat-warning{border:1px solid #e4ae57;color:#ffda94;background:#432d1a;padding:10px;border-radius:10px;font-size:12px}
+#section-chat .message .deploy-chat-verified{background:#0d433b;border:1px solid #39bd91;color:#acffe1;padding:10px;border-radius:10px}
+.deploy-link[data-deploy-status=unverified]{background:#173348!important;border-color:#7e8098!important;cursor:default}
+.deploy-link[data-deploy-status=unavailable]{background:#432530!important;border-color:#d07b81!important;cursor:default}
+.deploy-link[data-deploy-status=online]{border-color:#2ad8a1!important;box-shadow:0 0 13px #25c79b2c!important}
+#project-verify-links{min-height:46px}
+@media(max-width:780px){
+ .jarvis-chat-hero{min-height:115px!important;max-height:132px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:14px!important;padding:5px 9px!important}
+ .jarvis-chat-hero .jarvis-core{width:95px!important;height:95px!important;flex-basis:95px!important;display:grid;place-items:center}
+ .jarvis-chat-hero .jarvis-core-ring{width:83px!important;height:83px!important}
+ .jarvis-chat-hero .jarvis-hero-unit{width:110px!important;height:112px!important;transform:scale(.58)!important;transform-origin:50% 50%;margin:auto}
+ .jarvis-chat-hero .jarvis-hero-copy{text-align:left!important;max-width:calc(100% - 120px)}
+ .jarvis-chat-hero .jarvis-intro-buttons{display:none!important}
+ body.jarvis-has-history .jarvis-chat-hero{max-height:69px!important;min-height:69px!important}
+ body.jarvis-has-history .jarvis-chat-hero .jarvis-core{width:55px!important;height:55px!important;flex-basis:55px!important}
+ body.jarvis-has-history .jarvis-chat-hero .jarvis-core-ring{width:47px!important;height:47px!important}
+ body.jarvis-has-history .jarvis-chat-hero .jarvis-hero-unit{transform:scale(.32)!important}
+ body.jarvis-has-history .jarvis-chat-hero .jarvis-hero-copy{max-width:calc(100% - 73px)}
+ #section-chat>.panel{height:calc(100dvh - 155px - env(safe-area-inset-bottom))!important;min-height:0!important}
+ #section-chat .inline-form{flex-shrink:0!important;z-index:2}
+}
+@media(prefers-reduced-motion:reduce){
+ .jarvis-unit *, .jarvis-hero-unit *{animation:none!important}
+ .jarvis-unit .rb-eye,.jarvis-hero-unit .rb-eye{transform:none}
+}
