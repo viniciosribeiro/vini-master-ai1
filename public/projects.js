@@ -32,6 +32,10 @@ function renderPortfolio(){
   const card=document.createElement('article');card.className='portfolio-card';card.dataset.status=item.status;
   card.append(projectText('strong',item.name));
   card.append(projectText('small',projectStatusLabel(item.status)+' · '+item.platform+' · '+(item.repo||'Sem GitHub')));
+  const prod=deployAnchor(item.deploy_url,'🌍 Abrir site',item.deploy_source);
+  const preview=deployAnchor(item.preview_url,'🧪 Abrir prévia',item.preview_source);
+  if(prod)card.append(prod);
+  if(preview)card.append(preview);
   if(item.description)card.append(projectText('p',item.description.slice(0,240)));
   card.append(projectButton('Gerenciar projeto',()=>selectProject(item.id),'secondary'));
   parent.append(card);
@@ -42,6 +46,27 @@ async function selectProject(id){
  if(!selectedProject)return;
  renderSelectedProject();await loadProjectJobs();
  pj('project-workspace').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function deployAnchor(url,title,source){
+ if(typeof url!=='string'||!/^https:\/\/[^ \n]+$/.test(url))return null;
+ let link;try{link=new URL(url);if(link.protocol!=='https:')return null;}catch{return null;}
+ const card=document.createElement('a');card.className='deploy-link';card.href=link.href;
+ card.target='_blank';card.rel='noopener noreferrer';
+ card.append(projectText('strong',title),projectText('small',link.hostname+(source==='github'?' · GitHub deployment':' · Link cadastrado')));
+ card.append(projectText('span','Abrir site ↗','deploy-go'));
+ return card;
+}
+function renderDeploymentLinks(){
+ const box=pj('project-deploy-links');box.replaceChildren();
+ if(!selectedProject)return;
+ const live=deployAnchor(selectedProject.deploy_url,'🌍 Site em produção',selectedProject.deploy_source);
+ const prev=deployAnchor(selectedProject.preview_url,'🧪 Prévia / testes',selectedProject.preview_source);
+ if(live)box.append(live);
+ if(prev)box.append(prev);
+ if(!live&&!prev)box.append(projectText('p','Nenhum endereço de deploy identificado ainda. Quando houver um site publicado, ele aparecerá aqui.','muted'));
+ pj('project-deploy-url').value=selectedProject.deploy_url||'';
+ pj('project-preview-url').value=selectedProject.preview_url||'';
+ pj('project-sync-deployments').disabled=!selectedProject.repo||!githubReady;
 }
 function renderSelectedProject(){
  const row=selectedProject,container=pj('project-workspace');
@@ -59,6 +84,7 @@ function renderSelectedProject(){
  pj('project-edit-form').querySelector('button[type="submit"]').disabled=row.status==='trashed';
  pj('code-job-form').querySelector('button[type="submit"]').disabled=row.status!=='active'||!row.repo||!githubReady;
  pj('project-generate-ideas').disabled=row.status!=='active';
+ renderDeploymentLinks();
  renderProjectIdeas();
 }
 function renderProjectIdeas(){
@@ -116,6 +142,30 @@ async function startCodeJob(request){
   return result;
  }catch(e){projectNotice('A tarefa não começou: '+e.message);}
 }
+pj('project-deploy-form').addEventListener('submit',async event=>{
+ event.preventDefault();if(!selectedProject)return;
+ const button=event.target.querySelector('button');button.disabled=true;
+ try{
+  const payload={deployUrl:pj('project-deploy-url').value.trim(),previewUrl:pj('project-preview-url').value.trim()};
+  await api('/projects/'+selectedProject.id+'/deploy',{method:'PUT',body:payload});
+  await loadProjects();projectNotice('Links registrados. Abra o cartão para conferir a publicação.');
+ }catch(e){projectNotice('Endereço não salvo: '+e.message);}
+ finally{button.disabled=false;}
+});
+pj('project-sync-deployments').addEventListener('click',async event=>{
+ if(!selectedProject)return;
+ const btn=event.currentTarget;btn.disabled=true;
+ pj('deploy-check-status').textContent='Procurando implantações bem-sucedidas no GitHub...';
+ try{
+  const result=await api('/projects/'+selectedProject.id+'/deployments',{method:'POST',body:{}});
+  await loadProjects();
+  pj('deploy-check-status').textContent=result.result.found?'Deploy encontrado no GitHub. Abra o link no cartão para conferir.':'Nenhum deployment com link HTTPS foi encontrado no GitHub. Você pode cadastrar o endereço manualmente.';
+ }catch(e){pj('deploy-check-status').textContent='Não foi possível consultar: '+e.message;}
+ finally{btn.disabled=false;}
+});
+pj('projects-chat-interview').addEventListener('click',()=>{
+ show('chat');const input=document.getElementById('chat-message');input.value='Quero criar um novo projeto';document.getElementById('chat-form').requestSubmit();
+});
 pj('projects-refresh').addEventListener('click',loadProjects);
 pj('projects-import').addEventListener('click',async e=>{
  const button=e.currentTarget;button.disabled=true;
