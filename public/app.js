@@ -170,5 +170,6 @@ $('disconnect-nvidia').addEventListener('click',async e=>{
   await refresh();providerFeedback(result.externalSecret?'Chave do painel removida; ainda existe NVIDIA_API_KEY nos secrets do Worker.':'NVIDIA desconectada.');
  }catch(err){providerFeedback(err.message);}finally{button.disabled=false;}
 });
-updateStatus();if(token){refresh();loadChat()}else{notify('Configure MASTER_TOKEN na Cloudflare e insira a chave no cadeado para usar a IA.');}
+updateStatus();if(token){refresh();loadChat()}else{notify('Clique no cadeado para entrar. Se for a primeira vez, configure MASTER_TOKEN nos Secrets do Worker na Cloudflare.');}
+fetch('/api/health',{cache:'no-store'}).then(r=>r.json()).then(h=>{if(!h.accessConfigured){notify('Falta configurar MASTER_TOKEN no Worker Cloudflare. A IA já está vinculada, mas o chat precisa dessa chave privada.');}}).catch(()=>{});
 setInterval(()=>{if(token)refresh()},10000);
