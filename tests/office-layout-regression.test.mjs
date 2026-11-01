@@ -39,11 +39,11 @@ test('Navigation still exposes agents and office on mobile',()=>{
  assert.match(css,/\.sidebar \.nav\[data-section="agents"\]\{display:flex!important\}/);
 });
 test('Old PWA cache cannot keep previous broken reference styles',()=>{
- assert.match(sw,/vini-master-shell-v25/);
+ assert.match(sw,/vini-master-shell-v26/);
  assert.match(html,/vini-reference\.js\?v=22/);
  assert.match(html,/vini-reference\.css\?v=21/);
- assert.match(html,/Control Center R4 0\.17\.6/);
- assert.match(worker,/version:'0\.17\.6'/);
+ assert.match(html,/Control Center R4 0\.17\.7/);
+ assert.match(worker,/version:'0\.17\.7'/);
 });
 test('No destructive data or secret change in visual rollback',()=>{
  assert.match(worker,/officeAgentsRestored:true/);
@@ -62,9 +62,15 @@ test('Voice launcher stays in chat actions instead of shifting the entire conver
  const voice=load('public/vini-voice-live.js');
  const voiceCss=load('public/vini-voice-live.css');
  assert.match(voice,/querySelector\('\.vini-chat-actions'\)/);
- assert.match(voice,/actions\.append\(button\)/);
+ assert.match(voice,/host\.append\(button\)/);
  assert.doesNotMatch(voice,/section\.prepend\(button\)/);
  assert.match(voiceCss,/\.vini-chat-actions\{display:flex;flex-wrap:wrap;/);
- assert.match(html,/vini-voice-live\.js\?v=25/);
- assert.match(html,/vini-voice-live\.css\?v=24/);
+ assert.match(html,/vini-voice-live\.js\?v=26/);
+ assert.match(html,/vini-voice-live\.css\?v=25/);
+});
+
+test('Agent cards are attached inside the detached office before insertion',()=>{
+ const code=load('public/vini-control.js');
+ assert.match(code,/office\.querySelector\('#vc-office-left'\)/);
+ assert.doesNotMatch(code,/by\(i%2\?'vc-office-right':'vc-office-left'\)\.append/);
 });
