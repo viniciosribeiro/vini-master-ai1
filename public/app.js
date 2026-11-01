@@ -28,7 +28,7 @@ function renderAssistant(container,content,provider){
  container.replaceChildren();
  const body=el('div','reply-body');
  const value=String(content||'').replace(/\r\n/g,'\n').trim();
- const chunks=value.split(/\n{2,}/).slice(0,35);
+ const chunks=value.split(/\n{2,}/);
  for(const chunk of chunks){
   const trimmed=chunk.trim();if(!trimmed)continue;
   const clean=trimmed.replace(/^#{1,4}\s+/gm,'').replace(/\*\*(.*?)\*\*/g,'$1');
