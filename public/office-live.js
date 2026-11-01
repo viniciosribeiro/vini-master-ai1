@@ -20,7 +20,7 @@ function renderOfficeLive(){
  const events=Array.isArray(state.activity)?state.activity:[];
  const jobs=Array.isArray(state.codeJobs)?state.codeJobs:[];
  const runningJob=jobs.find(j=>j.status==='working'&&realRecent(j.updated_at));
- const mission=state.missions?.[0];
+ const mission=state.missions?.find(m=>m.status==='running')||state.missions?.[0];
  const runningMission=mission&&mission.status==='running';
  const counts=new Set();
  if(runningMission){
