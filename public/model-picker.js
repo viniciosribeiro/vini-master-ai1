@@ -6,7 +6,7 @@ let catalog=[],selected='',ready=false,loading=false;
 const feedback=(id,msg)=>{const e=$(id);if(e)e.textContent=String(msg||'');};
 const chooseCost=(id)=>{
  const model=catalog.find(m=>m.id===id);
- const paid=!!model?.paidOnly;
+ const paid=!!model?.paidOnly||!model;
  const wrap=$('cf-paid-ack-wrap');if(wrap)wrap.hidden=!paid;
  if($('cf-paid-ack'))$('cf-paid-ack').checked=false;
  feedback('cf-model-pricing',paid?'Atenção: este modelo exige faturamento ou créditos no AI Gateway. O teste poderá gerar cobrança.':model?'Modelo Cloudflare hospedado. Sujeito ao limite de 10.000 neurons gratuitos por dia; a demanda varia por modelo.':'Modelo personalizado: disponibilidade e exigência de pagamento serão verificadas ao testar.');
@@ -44,8 +44,8 @@ async function save(provider){
  const button=$(isCF?'cf-model-save':'nv-model-save'),target=isCF?'cf-model-feedback':'nv-model-feedback';
  if(!model){feedback(target,'Digite ou selecione um modelo.');return;}
  const selectedItem=catalog.find(x=>x.id===model);
- const billable=!!selectedItem?.paidOnly;
- if(billable&&!$('cf-paid-ack')?.checked){feedback(target,'Marque a confirmação de modelo que exige faturamento antes de testar.');return;}
+ const billable=isCF&&(!!selectedItem?.paidOnly||!selectedItem);
+ if(billable&&!$('cf-paid-ack')?.checked){feedback(target,'Confirme que modelos pagos ou personalizados podem gerar cobrança antes de testar.');return;}
  if(!isCF&&!state?.hasNvidia){feedback(target,'Conecte primeiro a chave da NVIDIA na seção abaixo.');return;}
  button.disabled=true;
  feedback(target,'Testando '+model+' com uma chamada real…');
