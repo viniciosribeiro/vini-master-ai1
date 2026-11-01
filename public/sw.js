@@ -1,4 +1,4 @@
-const CACHE='vini-master-shell-v10';
+const CACHE='vini-master-shell-v11';
 const ASSETS=['/','/styles.css','/mobile-live.css','/app.js','/projects.js','/pwa.js','/jarvis.css','/jarvis.js','/live-monitor.js','/evidence.js','/vercel-console.js','/icon.svg','/icon-192.png','/icon-512.png','/manifest.webmanifest'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS).catch(()=>{})));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('vini-master-shell-')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim();});
