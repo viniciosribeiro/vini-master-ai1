@@ -1,3 +1,4 @@
+import {setupIntakes,handleIntake} from './intake.js';
 import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
 import {saveGitHub,readGitHub,hasGitHub,verifyGitHub,listGitHubRepos} from './github-engine.js';
@@ -198,6 +199,13 @@ export async function handleAPI(req,env){
    const current=await env.DB.prepare("SELECT value FROM settings WHERE key='provider'").first();
    const provider=normalizeProvider(data.provider||current?.value||'auto');
    await env.DB.prepare("INSERT INTO messages(role,content) VALUES('user',?)").bind(message).run();
+   await setupIntakes(env.DB);
+   const interview=await handleIntake(env,message,provider);
+   if(interview){
+    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(interview.reply).run();
+    await log(env,'supervisor',interview.intake?.status==='started'?'Projeto criado após entrevista':'Entrevista de projeto: pergunta em andamento');
+    return respond({...interview,provider:null,model:null});
+   }
    const match=message.match(/^(?:por favor[,:]?\s*)?(?:lembre(?:-se)?|guarde|memorize|não esqueça)(?:\s+de)?(?:\s+que)?[,\s:]+(.+)/iu);
    const saved=match?.[1]?.trim();
    if(saved&&saved.length>=3){
