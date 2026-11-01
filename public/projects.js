@@ -175,3 +175,27 @@ pj('github-disconnect').addEventListener('click',async()=>{
  catch(e){projectNotice(e.message);}
 });
 setInterval(()=>{if(token&&authValidated&&!pj('section-projects').hidden&&selectedProject)loadProjectJobs();},12000);
+
+async function loadWorkProfile(){
+ if(!token||!authValidated)return;
+ try{const data=await api('/profile');pj('work-profile-text').value=data.profile?.content||'';}
+ catch(e){pj('work-profile-feedback').textContent=e.message;}
+}
+pj('work-profile-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ try{await api('/profile',{method:'PUT',body:{content:pj('work-profile-text').value}});pj('work-profile-feedback').textContent='Perfil salvo. O supervisor considerará suas preferências nas próximas conversas.';}
+ catch(err){pj('work-profile-feedback').textContent=err.message;}
+});
+pj('profile-analyze').addEventListener('click',async e=>{
+ const button=e.currentTarget;button.disabled=true;pj('work-profile-feedback').textContent='Analisando suas conversas e decisões reais...';
+ try{
+  const result=await api('/profile/analyze',{method:'POST',body:{}});
+  await loadWorkProfile();pj('work-profile-feedback').textContent=result.updated?'Seu perfil de trabalho foi atualizado. Revise o texto para conferir as conclusões.':result.reason;
+ }catch(err){pj('work-profile-feedback').textContent=err.message;}
+ finally{button.disabled=false;}
+});
+pj('profile-delete').addEventListener('click',async()=>{
+ if(!confirm('Apagar o perfil resumido de trabalho? Mensagens e memórias explícitas serão mantidas.'))return;
+ try{await api('/profile',{method:'DELETE',body:{confirm:'APAGAR PERFIL'}});pj('work-profile-text').value='';pj('work-profile-feedback').textContent='Perfil resumido apagado.';}
+ catch(err){pj('work-profile-feedback').textContent=err.message;}
+});
