@@ -22,4 +22,5 @@ export async function ensureSchema(db){
  for(const statement of SQL)await db.prepare(statement).run();
  await initializeProjects(db);
  await db.prepare("CREATE TABLE IF NOT EXISTS code_jobs (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,request TEXT NOT NULL,provider TEXT NOT NULL DEFAULT 'auto',status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',result TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+ schemaReady=true;
 }
