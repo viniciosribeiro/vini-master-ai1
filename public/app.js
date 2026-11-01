@@ -137,6 +137,7 @@ async function loadChat(){
    box.append(bubble);
   }
   box.scrollTop=box.scrollHeight;
+  const intake=await api('/intake');$('intake-start-now').hidden=!intake.active;
  }catch(e){notify(e.message);}
 }
 let chatSending=false;
