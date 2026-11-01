@@ -471,3 +471,28 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
 .chat-execution-receipt[data-kind=blocked]{border-color:#cf8864;background:#3a292c;color:#ffd5bb}
 .chat-execution-receipt[data-kind=code_job],.chat-execution-receipt[data-kind=mission]{border-color:#3cc9ba;color:#baffef}
 @media(max-width:780px){.vini-proof-section{padding:12px!important}.vini-proof-list{grid-template-columns:1fr;max-height:400px}.vini-proof-card{padding:11px}}
+
+/* Vercel: actionable connection and preview deploy workflow on phones. */
+.vercel-console{margin:16px 0;padding:clamp(12px,3vw,20px);border:1px solid #2779a1;background:#0b263e;border-radius:18px;display:grid;gap:11px;color:#e7f7ff}
+.vercel-console h2{font-size:19px!important;color:#e8fbff!important;margin:0!important}
+.vercel-console h3{font-size:15px!important;color:#d8f5ff!important;margin:4px 0!important}
+.vercel-console p{font-size:12px!important;line-height:1.5!important;margin:0!important}
+.vercel-console label{display:grid;gap:6px;color:#d3ebfa;font-size:13px}
+.vercel-console label input,.vercel-console label select{width:100%;min-width:0;border:1px solid #316e8c!important;background:#071b2e!important;color:#eafaff!important;padding:11px 12px!important;min-height:46px;border-radius:12px}
+.vercel-console form,.vercel-project-picker{display:grid;gap:12px}
+.vercel-console button{min-height:43px;border-radius:12px;padding:9px 12px;font-size:12px;font-weight:750}
+.vercel-console .vercel-actions{display:flex;flex-wrap:wrap;gap:8px}
+.vercel-console .vercel-actions button{flex:1;min-width:125px}
+.vercel-status{border:1px solid #856a4d;background:#352a27;color:#ffe0bb;padding:10px 12px;border-radius:11px}
+.vercel-status[data-connected=true]{border-color:#2e987d;background:#123c3d;color:#a5f7dd}
+.vercel-project-picker{background:#071d32;padding:12px;border:1px solid #245578;border-radius:15px}
+.vercel-build-list{display:grid;gap:9px;max-height:340px;overflow-y:auto}
+.vercel-build-card{display:flex;gap:8px;flex-direction:column;padding:11px;border:1px solid #285a75;border-left:3px solid #648db2;background:#08192a;border-radius:12px}
+.vercel-build-card strong{font-size:13px;color:#ebfaff}
+.vercel-build-state{font-size:11px;color:#a5c4d9}
+.vercel-build-state[data-state=READY]{color:#58ecc1}
+.vercel-build-state[data-state=ERROR]{color:#ffa59a}
+.vercel-build-id{color:#84aac0;font-size:10px;overflow-wrap:anywhere}
+.vercel-build-url{color:#a2fce9;border:1px solid #2ac89f;padding:9px;border-radius:10px;text-decoration:none;font-size:12px}
+.vini-action-button{margin-top:9px;max-width:100%;white-space:normal!important;min-height:43px!important;line-height:1.3!important;padding:9px 12px!important;border:1px solid #27bde1!important;background:#12628a!important;color:#eefcff!important;border-radius:12px!important}
+@media(max-width:780px){.vercel-console{padding:12px}.vercel-console h2{font-size:17px!important}.vercel-console label input{font-size:16px!important}.vini-action-button{width:100%}}
