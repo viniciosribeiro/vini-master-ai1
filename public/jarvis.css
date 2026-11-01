@@ -244,3 +244,21 @@ body[data-jarvis-screen=chat] .jarvis-dock{display:none}
 @media(prefers-reduced-motion:reduce){
  *,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+
+/* Natural chat: reclaim space automatically as the conversation grows. */
+body.jarvis-has-history .jarvis-chat-hero{min-height:78px!important;padding:0 0 5px!important;display:flex;justify-content:flex-start;align-items:center;gap:10px}
+body.jarvis-has-history .jarvis-core{width:70px;height:70px;flex:0 0 70px}
+body.jarvis-has-history .jarvis-core-ring{width:58px;height:58px;border-width:2px}
+body.jarvis-has-history .jarvis-core-ring:before{inset:-5px;border-width:1px}
+body.jarvis-has-history .jarvis-core-ring:after{display:none}
+body.jarvis-has-history .jarvis-hero-unit{transform:scale(.4);transform-origin:center;flex-shrink:0}
+body.jarvis-has-history .jarvis-hero-copy{text-align:left}
+body.jarvis-has-history .jarvis-hero-copy strong{font-size:12px}
+body.jarvis-has-history .jarvis-hero-copy span{font-size:10px}
+body.jarvis-has-history .jarvis-intro-buttons{display:none}
+@media(max-width:780px){
+ body.jarvis-has-history .jarvis-chat-hero{min-height:65px!important}
+ body.jarvis-has-history .jarvis-core{width:54px;height:55px;flex-basis:54px}
+ body.jarvis-has-history .jarvis-core-ring{width:47px;height:47px}
+ body.jarvis-has-history .jarvis-hero-unit{transform:scale(.32)}
+}
