@@ -49,10 +49,13 @@ export function findTargetProject(message,projects){
  // Do not modify an arbitrary repo when the instruction is ambiguous.
  return candidates.length===1&&/\b(?:nesse|neste|no meu|deste)\s+(?:projeto|sistema|site|app)\b/iu.test(message)?candidates[0]:null;
 }
+async function noteBlock(env,reason){
+ try{await env.DB?.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('supervisor','Delegação bloqueada: '+reason.slice(0,180)).run();}catch{}
+}
 export async function delegateChatWork(env,request,provider='auto',projects=[]){
  const intent=routeWorkIntent(request);
  if(!intent)return null;
- if(!env.MISSIONS)return {reply:'Entendi sua tarefa, mas o serviço de execução de agentes não está configurado. Não vou fingir que a equipe começou a trabalhar.',delegation:{status:'blocked',reason:'Workflow indisponível'}};
+ if(!env.MISSIONS){await noteBlock(env,'Workflow indisponível');return {reply:'Entendi sua tarefa, mas o serviço de execução de agentes não está configurado. Não vou fingir que a equipe começou a trabalhar.',delegation:{status:'blocked',reason:'Workflow indisponível'}};}
  const db=env.DB;
  const target=findTargetProject(request,projects);
  const writeIntent=!!target&&intent.codeRequested;
@@ -60,7 +63,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
   const authorized=await hasGitHub(db);
   if(authorized){
    const count=await db.prepare("SELECT COUNT(*) AS n FROM code_jobs WHERE date(created_at)=date('now')").first();
-   if(Number(count?.n||0)>=3)return {reply:'A equipe de programação atingiu o limite de três trabalhos de código hoje. Não criei um job fictício. Podemos continuar com planejamento ou retomar a programação após a renovação do limite.',delegation:{status:'blocked',reason:'Limite de programação'}};
+   if(Number(count?.n||0)>=3){await noteBlock(env,'Limite diário da programação atingido');return {reply:'A equipe de programação atingiu o limite de três trabalhos de código hoje. Não criei um job fictício. Podemos continuar com planejamento ou retomar a programação após a renovação do limite.',delegation:{status:'blocked',reason:'Limite de programação'}};}
    const id=crypto.randomUUID();
    const description=request.slice(0,3300);
    await db.prepare('INSERT INTO code_jobs(id,project_id,request,provider) VALUES(?,?,?,?)').bind(id,target.id,description,provider).run();
@@ -76,7 +79,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
  }
  const daily=await db.prepare("SELECT COUNT(*) AS n FROM missions WHERE date(created_at)=date('now')").first();
  const max=Math.min(20,Math.max(1,Number(env.MAX_DAILY_MISSIONS)||3));
- if(Number(daily?.n||0)>=max)return {reply:'Sua solicitação exige trabalho da equipe, mas o limite diário de '+max+' missões já foi atingido. Nenhum agente foi acionado artificialmente. A solicitação pode ser retomada quando houver cota.',delegation:{status:'blocked',reason:'Limite diário de missões'}};
+ if(Number(daily?.n||0)>=max){await noteBlock(env,'Limite diário de '+max+' missões atingido');return {reply:'Sua solicitação exige trabalho da equipe, mas o limite diário de '+max+' missões já foi atingido. Nenhum agente foi acionado artificialmente. A solicitação pode ser retomada quando houver cota.',delegation:{status:'blocked',reason:'Limite diário de missões'}};}
  const id=crypto.randomUUID();
  const description=request.slice(0,10000);
  await db.prepare("INSERT INTO missions(id,title,description,provider,status) VALUES(?,?,?,?,'queued')").bind(id,intent.title,description,provider).run();
