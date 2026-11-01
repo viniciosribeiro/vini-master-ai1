@@ -1,3 +1,4 @@
+import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
 import {saveGitHub,readGitHub,hasGitHub,verifyGitHub} from './github-engine.js';
 import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
@@ -68,6 +69,22 @@ export async function handleAPI(req,env){
   if(path==='/api/integrations/nvidia'&&method==='DELETE'){
    await removeNvidia(env);
    return respond({connected:!!env.NVIDIA_API_KEY,externalSecret:!!env.NVIDIA_API_KEY});
+  }
+  if(path==='/api/profile'&&method==='GET')return respond({profile:await readProfile(env.DB)});
+  if(path==='/api/profile'&&method==='PUT'){
+   const data=await parse(req);
+   return respond({profile:await saveProfile(env.DB,String(data.content||''))});
+  }
+  if(path==='/api/profile'&&method==='DELETE'){
+   const data=await parse(req);
+   if(data.confirm!=='APAGAR PERFIL')return fail('Confirme APAGAR PERFIL.');
+   await env.DB.prepare('DELETE FROM work_profile WHERE id=1').run();return respond({ok:true});
+  }
+  if(path==='/api/profile/analyze'&&method==='POST'){
+   const previous=await readProfile(env.DB);
+   if(previous.updated_at&&previous.updated_at.slice(0,10)===new Date().toISOString().slice(0,10))return fail('Perfil já atualizado hoje. Você pode editar manualmente.',429);
+   try{return respond(await generateProfile(env));}
+   catch(e){return fail('Não foi possível atualizar perfil: '+String(e.message||e).slice(0,200),503);}
   }
   if(path==='/api/projects'&&method==='GET')return respond({projects:await listProjects(env.DB)});
   if(path==='/api/projects'&&method==='POST'){
@@ -171,19 +188,20 @@ export async function handleAPI(req,env){
     await env.DB.prepare('INSERT INTO memories(id,content) VALUES(?,?)').bind(crypto.randomUUID(),saved.slice(0,1200)).run();
     await log(env,'supervisor','Memória permanente solicitada e registrada');
    }
-   const [past,pinned,relevant,projects,decisions]=await Promise.all([
+   const [past,pinned,relevant,projects,decisions,profile]=await Promise.all([
     env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 18').all(),
     env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 60').all(),
     recall(env,message),
     env.DB.prepare("SELECT name,description,platform,repo FROM projects WHERE status='active' ORDER BY updated_at DESC LIMIT 20").all(),
-    env.DB.prepare("SELECT action,description FROM project_events ORDER BY id DESC LIMIT 25").all()
+    env.DB.prepare("SELECT action,description FROM project_events ORDER BY id DESC LIMIT 25").all(),
+    readProfile(env.DB)
    ]);
    const context=(pinned.results||[]).map(x=>'- '+x.content.slice(0,600)).join('\n').slice(0,8000);
    const old=relevant.filter(x=>x.content!==message).map(x=>'- '+x.content.slice(0,500)).join('\n').slice(0,5000);
 
    const portfolio=(projects.results||[]).map(p=>p.name+' ['+p.platform+'] '+p.description.slice(0,320)+' '+p.repo).join('\n').slice(0,5600);
    const activity=(decisions.results||[]).map(d=>d.action+': '+d.description.slice(0,180)).join('\n').slice(0,2700);
-   const system='Você é o VINI MASTER, um assistente pessoal amigável, direto e muito inteligente, conversando em português brasileiro natural. Fale como uma pessoa prestativa: frases simples, tom humano, sem linguagem corporativa, sem relatórios automáticos, sem introduções protocolares, sem repetir o pedido e sem blocos de títulos desnecessários. Em conversas normais, priorize uma resposta curta e útil (geralmente 2 a 5 parágrafos breves). Se a pessoa pedir detalhes, código ou uma análise complexa, ofereça a profundidade necessária. Não gere listas de etapas, recomendações ou riscos por padrão, nem rótulos como Resposta:, Conclusão:, Análise:. Evite Markdown excessivo e nunca exponha seu raciocínio interno. Não afirme que alterou GitHub, fez deploy ou executou ferramentas: isso não está habilitado neste estágio. Quando a pessoa pedir trabalho dos especialistas, explique brevemente como usar Nova missão. Leve em conta estas memórias (não as repita sem motivo):\n'+context+'\nTrechos úteis de conversas anteriores (use apenas se forem relevantes):\n'+old+'\nProjetos ativos do usuário:\n'+portfolio+'\nDecisões e alterações recentes de projetos:\n'+activity;
+   const system='Você é o VINI MASTER, um assistente pessoal amigável, direto e muito inteligente, conversando em português brasileiro natural. Fale como uma pessoa prestativa: frases simples, tom humano, sem linguagem corporativa, sem relatórios automáticos, sem introduções protocolares, sem repetir o pedido e sem blocos de títulos desnecessários. Em conversas normais, priorize uma resposta curta e útil (geralmente 2 a 5 parágrafos breves). Se a pessoa pedir detalhes, código ou uma análise complexa, ofereça a profundidade necessária. Não gere listas de etapas, recomendações ou riscos por padrão, nem rótulos como Resposta:, Conclusão:, Análise:. Evite Markdown excessivo e nunca exponha seu raciocínio interno. Não afirme que alterou GitHub, fez deploy ou executou ferramentas: isso não está habilitado neste estágio. Quando a pessoa pedir trabalho dos especialistas, explique brevemente como usar Nova missão. Leve em conta estas memórias (não as repita sem motivo):\n'+context+'\nTrechos úteis de conversas anteriores (use apenas se forem relevantes):\n'+old+'\nProjetos ativos do usuário:\n'+portfolio+'\nDecisões e alterações recentes de projetos:\n'+activity+'\nPerfil de trabalho registrado e editável:\n'+profile.content.slice(0,3400);
    const history=(past.results||[]).reverse().map(x=>({role:x.role,content:x.content.slice(0,MAX_MESSAGE)}));
    try{
     const answer=await callAI(env,[{role:'system',content:system},...history],provider);
