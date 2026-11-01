@@ -69,9 +69,9 @@
   const officeTitle=office.querySelector('.vc-office-top h2');
   if(officeTitle)officeTitle.textContent='Escritório Virtual';
   const program=document.querySelector('.nav[data-section="agents"] span');
-  if(program)program.textContent='Rede Neural';
+  if(program)program.textContent='Agentes';
   const bottom=document.querySelector('.sidebar nav');
-  if(bottom)bottom.setAttribute('aria-label','Chat, Escritório, Projetos, Missões, Rede Neural e Memória');
+  if(bottom)bottom.setAttribute('aria-label','Chat, Escritório, Projetos, Missões, Agentes e Memória');
   const note=$('vc-office-current');
   if(note)note.textContent='Dados vinculados às missões do Cloudflare D1';
   update();
