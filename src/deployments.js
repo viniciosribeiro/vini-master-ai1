@@ -65,6 +65,10 @@ export async function verifyProjectLinks(db,project,requested='both',fetcher=fet
   const verdict=await verifyPublicDeployment(project[col],fetcher);
   // The WHERE URL condition prevents a concurrent edit from accepting a stale verification.
   await db.prepare('UPDATE projects SET '+statusCol+'=?, '+dateCol+'=? WHERE id=? AND '+col+'=?').bind(verdict.status,verdict.checkedAt,project.id,project[col]).run();
+  if(verdict.status!=='unverified'&&verdict.status!==project[statusCol]){
+   const note='Deploy '+(kind==='production'?'produção':'prévia')+' de '+String(project.name||'projeto').slice(0,80)+': '+(verdict.status==='online'?'HTTP verificado, endereço respondeu':'indisponível na verificação HTTP')+' ('+String(verdict.httpStatus||'sem resposta')+')';
+   await db.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('infra',note).run();
+  }
   output[kind]=verdict;
  }
  return output;
