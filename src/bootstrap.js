@@ -1,4 +1,8 @@
 import {setupThreads} from './chat-threads.js';
+async function setupMissionProjects(db){
+ await db.prepare("CREATE TABLE IF NOT EXISTS mission_project_links (mission_id TEXT PRIMARY KEY,project_id TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+ await db.prepare("CREATE INDEX IF NOT EXISTS idx_mission_project_links_project ON mission_project_links(project_id)").run();
+}
 import {setupDeployments} from './deployments.js';
 import {initializeProjects} from './project-manager.js';
 const SQL = [
@@ -24,7 +28,7 @@ export async function ensureSchema(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS work_profile (id INTEGER PRIMARY KEY CHECK(id=1),content TEXT NOT NULL DEFAULT '',updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run(); await db.prepare("CREATE TABLE IF NOT EXISTS code_jobs (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,request TEXT NOT NULL,provider TEXT NOT NULL DEFAULT 'auto',status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',result TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS code_agent_runs (id TEXT PRIMARY KEY,code_job_id TEXT NOT NULL,agent_id TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',output TEXT NOT NULL DEFAULT '',started_at TEXT,finished_at TEXT,UNIQUE(code_job_id,agent_id))").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS vercel_builds (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,project_name TEXT NOT NULL,source_deployment_id TEXT,preview_url TEXT,status TEXT NOT NULL DEFAULT 'QUEUED',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
- await setupThreads(db); schemaReady=true; return;}
+ await setupThreads(db); await setupMissionProjects(db); schemaReady=true; return;}
  catch(err){if(!/no such table|does not exist/i.test(String(err.message||err)))throw err;}
  for(const statement of SQL)await db.prepare(statement).run();
  await initializeProjects(db);
@@ -33,6 +37,6 @@ export async function ensureSchema(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS code_jobs (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,request TEXT NOT NULL,provider TEXT NOT NULL DEFAULT 'auto',status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',result TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS code_agent_runs (id TEXT PRIMARY KEY,code_job_id TEXT NOT NULL,agent_id TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',output TEXT NOT NULL DEFAULT '',started_at TEXT,finished_at TEXT,UNIQUE(code_job_id,agent_id))").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS vercel_builds (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,project_name TEXT NOT NULL,source_deployment_id TEXT,preview_url TEXT,status TEXT NOT NULL DEFAULT 'QUEUED',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
- await setupThreads(db);
+ await setupThreads(db); await setupMissionProjects(db);
  schemaReady=true;
 }
