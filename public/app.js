@@ -243,6 +243,17 @@ async function sendChat(content,origin){
   renderAssistant(origin,result.reply,result.provider);
   if(result.execution&&result.execution.kind!=='conversation')appendExecutionReceipt(origin,result.execution);
   if(result.actionRequired&&/^vercel_/.test(result.actionRequired)&&!origin.querySelector('.vini-action-button'))addVercelAction(origin,result.actionRequired==='vercel_setup'?'Conectar Vercel agora':'Escolher projeto Vercel');
+  if(result.actionRequired==='work_status'){
+   const actions=el('div','delegation-actions');
+   const office=el('button','secondary','Ver diário real');
+   office.type='button';office.addEventListener('click',()=>show('office'));
+   const proof=el('button','secondary','Ver comprovantes');
+   proof.type='button';proof.addEventListener('click',()=>{
+    show('office');document.getElementById('vini-proof-list')?.scrollIntoView({behavior:'smooth',block:'start'});
+   });
+   actions.append(office,proof);origin.append(actions);
+  }
+
 
   if(result.execution?.kind==='blocked'||result.delegation?.status==='queued')document.dispatchEvent(new Event('vini:delegated'));
 
@@ -264,17 +275,23 @@ async function sendChat(content,origin){
    origin.append(actions);
   }
 
+  if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   if(typeof window.jarvisSpeakReply==='function')window.jarvisSpeakReply(result.reply);
-  else if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   if(result.intake){const startBtn=document.getElementById('intake-start-now');if(startBtn)startBtn.hidden=result.intake.status!=='collecting';}
   if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
 
   await refresh();
   if(!$('section-chat').hidden&&!result.delegation?.status?.includes('queued'))await loadChat();
  }catch(e){
+  if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   origin.replaceChildren(el('p','reply-error','Não consegui responder agora: '+e.message));
   notify(e.message);
- }finally{chatSending=false;if(typeof window.jarvisSetMood==='function'&&!window.jarvisVoiceSpeaking)window.jarvisSetMood('idle');}
+ }finally{
+  chatSending=false;
+  if(typeof window.jarvisSetMood==='function'&&!window.jarvisVoiceSpeaking)window.jarvisSetMood('idle');
+  const label=document.getElementById('jarvis-voice-status');
+  if(label&&!window.jarvisVoiceSpeaking&&label.textContent.includes('pensando'))label.textContent='Pronto para conversar';
+ }
 }
 function startNewProjectInterview(){
  show('chat');
