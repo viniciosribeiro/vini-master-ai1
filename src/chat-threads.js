@@ -41,7 +41,8 @@ export async function createThread(db,{projectId=null,title='',draft=false}={}){
  return getThread(db,id);
 }
 export async function updateThread(db,id,patch){
- const t=await getThread(db,id);if(!t||t.status==='trashed')throw Error('Conversa não encontrada.');
+ const t=await getThread(db,id);if(!t)throw Error('Conversa não encontrada.');
+ if(t.status==='trashed'&&patch.status!=='active')throw Error('Restaure a conversa antes de editar.');
  if(patch.title!==undefined){
   if(!String(patch.title||'').trim())throw Error('Digite um título.');
   await db.prepare('UPDATE chat_threads SET title=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(chatTitle(patch.title),id).run();
@@ -83,5 +84,6 @@ export async function saveThreadMessage(db,threadId,role,content,provider=null){
 export async function chooseThread(db,id){
  const t=await getThread(db,id);
  if(!t||t.status!=='active')throw Error('Conversa arquivada ou inexistente. Restaure antes de conversar.');
+ if(t.project_id){const p=await db.prepare("SELECT status FROM projects WHERE id=?").bind(t.project_id).first();if(!p||p.status!=='active')throw Error('Projeto arquivado ou excluído. Restaure o projeto antes de continuar.');}
  return t;
 }
