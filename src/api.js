@@ -86,7 +86,7 @@ export async function handleAPI(req,env){
   if((path==='/api/models/test'||path==='/api/models/select')&&method==='POST'){
    const data=await parse(req),provider=String(data.provider||''),raw=String(data.model||'');
    let model;try{model=validateModel(provider,raw);}catch(e){return fail(String(e.message||e),400);}
-   if(paidModel(model)&&data.allowPaid!==true)return fail('Esse modelo pode exigir plano pago ou créditos de AI Gateway. Confirme que entende a possibilidade de cobrança antes de testar.',409);
+   if(provider==='cloudflare'&&(paidModel(model)||!CF_MODELS.some(x=>x.id===model))&&data.allowPaid!==true)return fail('Modelo pago ou personalizado: confirme que entende a possibilidade de cobrança antes de testar.',409);
    try{
     const probe=await verifySelectedModel(env,provider,model);
     if(path==='/api/models/test')return respond({...probe,saved:false});
