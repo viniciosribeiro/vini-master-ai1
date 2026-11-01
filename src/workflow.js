@@ -11,12 +11,12 @@ export class MissionWorkflow extends WorkflowEntrypoint {
  async run(event,step){
   if(event.payload?.codeJobId)return codeMission(this.env,event.payload.codeJobId,step);
   const id=event.payload.missionId;
-  const mission=await step.do('Carregar missão',async()=>this.env.DB.prepare('SELECT * FROM missions WHERE id=?').bind(id).first());
+  const mission=await step.do('Carregar missão',async()=>this.env.DB.prepare('SELECT m.*,l.project_id FROM missions m LEFT JOIN mission_project_links l ON l.mission_id=m.id WHERE m.id=?').bind(id).first());
   if(!mission)return {error:'Missão inexistente'};
   try{
    const ctx=await step.do('Recuperar histórico',async()=>{
     await record(this.env.DB,id,'supervisor','Consultando memória e histórico para definir escopo da missão');
-    const [pins,past]=await Promise.all([this.env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),this.env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 16').all()]);
+    const [pins,past]=await Promise.all([this.env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),mission.project_id?this.env.DB.prepare("SELECT m.role,m.content FROM messages m JOIN chat_threads t ON t.id=m.thread_id WHERE t.project_id=? AND t.status<>'trashed' ORDER BY m.id DESC LIMIT 16").bind(mission.project_id).all():Promise.resolve({results:[]})]);
     return {pins:(pins.results||[]).map(x=>x.content.slice(0,350)).join('\n').slice(0,5500),past:(past.results||[]).reverse().map(x=>x.role+': '+x.content.slice(0,400)).join('\n').slice(0,5500)};
    });
    const plan=await step.do('Supervisor planeja',{retries:{limit:1,delay:'5 seconds'}},async()=>{
