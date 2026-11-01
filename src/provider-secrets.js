@@ -20,10 +20,9 @@ export async function storeNvidia(env,secret){
   .bind(as64(salt),as64(iv),as64(new Uint8Array(encrypted))).run();
 }
 export async function loadNvidia(env){
- if(env.NVIDIA_API_KEY)return env.NVIDIA_API_KEY;
- if(!env.DB||!env.MASTER_TOKEN)return null;
+ if(!env.DB||!env.MASTER_TOKEN)return env.NVIDIA_API_KEY||null;
  const record=await env.DB.prepare("SELECT salt,iv,ciphertext FROM provider_credentials WHERE name='nvidia'").first();
- if(!record)return null;
+ if(!record)return env.NVIDIA_API_KEY||null;
  try{
   const key=await keyFor(env.MASTER_TOKEN,un64(record.salt));
   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:un64(record.iv)},key,un64(record.ciphertext));
