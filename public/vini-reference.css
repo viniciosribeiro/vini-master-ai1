@@ -153,3 +153,7 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 @media(prefers-reduced-motion:reduce){
  .vc-agent-card,.vc-agent-tile,.vc-network-link{animation:none!important;transition:none!important}
 }
+
+/* Lighthouse coastline is taken directly from the approved project/mission mockups. */
+.top:before{inset:0 10% 0 43%!important;background:linear-gradient(90deg,#061326c9 2%,#08142f11 38%,#05102583 98%),url('/ref-lighthouse.webp') center 47%/cover no-repeat!important;opacity:.94!important;filter:saturate(1.22)}
+@media(max-width:780px){.top:before{inset:0 18% 0 34%!important;opacity:.72!important}}
