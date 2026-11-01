@@ -69,10 +69,18 @@ function placeEngines(){
 placeEngines();window.addEventListener('resize',placeEngines);
 
 $('jarvis-chat-new')?.addEventListener('click',()=>$('begin-project-chat')?.click());
+function setRobotMood(mood){
+ const el=document.querySelector('#jarvis-chat-hero .jarvis-hero-unit');
+ if(el)el.dataset.expression=mood;
+ const active=document.getElementById('jarvis-voice-status');
+ if(active&&mood==='thinking')active.textContent='VINI está pensando…';
+}
+window.jarvisSetMood=setRobotMood;
+window.jarvisVoiceSpeaking=false;
 const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false,voiceEnabled=false;
 const mics=()=>[$('jarvis-chat-mic'),$('jarvis-dock-mic')].filter(Boolean);
 function voiceStatus(text){const status=$('jarvis-voice-status');if(status)status.textContent=text;}
-function setListening(value){listening=value;mics().forEach(b=>{b.classList.toggle('listening',value);b.setAttribute('aria-pressed',String(value));});voiceStatus(value?'Estou ouvindo…':'Fale comigo ou digite sua mensagem');}
+function setListening(value){listening=value;mics().forEach(b=>{b.classList.toggle('listening',value);b.setAttribute('aria-pressed',String(value));});setRobotMood(value?'listening':window.jarvisVoiceSpeaking?'speaking':'idle');voiceStatus(value?'Estou ouvindo…':'Fale comigo ou digite sua mensagem');}
 function startVoice(){
  if(listening){rec?.stop();setListening(false);return;}
  if(!Rec){voiceStatus('Microfone não suportado neste navegador. Use o Chrome Android.');return;}
@@ -83,7 +91,7 @@ function startVoice(){
  try{rec.start();setListening(true);}catch{setListening(false);voiceStatus('Não foi possível iniciar o microfone.');}
 }
 mics().forEach(b=>b.addEventListener('click',startVoice));
-function disableVoiceOnTyping(){voiceEnabled=false;window.speechSynthesis?.cancel();}
+function disableVoiceOnTyping(){voiceEnabled=false;window.jarvisVoiceSpeaking=false;setRobotMood('idle');window.speechSynthesis?.cancel();}
 $('chat-message')?.addEventListener('input',disableVoiceOnTyping);
 $('jarvis-dock-message')?.addEventListener('input',disableVoiceOnTyping);
 
@@ -92,6 +100,9 @@ window.jarvisSpeakReply=(message)=>{
  const clean=String(message||'').replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').slice(0,1500).trim();if(!clean)return;
  speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(clean);utterance.lang='pt-BR';utterance.rate=1.02;utterance.pitch=1.04;
  const voices=speechSynthesis.getVoices(),br=voices.find(v=>v.lang.toLowerCase()==='pt-br');if(br)utterance.voice=br;
+ utterance.onstart=()=>{window.jarvisVoiceSpeaking=true;setRobotMood('speaking');voiceStatus('VINI está falando…');};
+ const finish=()=>{window.jarvisVoiceSpeaking=false;setRobotMood('idle');voiceStatus('Fale comigo ou digite sua mensagem');};
+ utterance.onend=finish;utterance.onerror=finish;
  speechSynthesis.speak(utterance);
 };
 const history=$('messages');
