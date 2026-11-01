@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "deploy": "wrangler deploy",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "test:voice": "node --test tests/native-voice-contract.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.142.0"
@@ -19,5 +20,8 @@
         "description": "Opcional. Chave gratuita NVIDIA NIM. Sem ela, o aplicativo usa Cloudflare Workers AI."
       }
     }
+  },
+  "dependencies": {
+    "agents": "0.32.0"
   }
 }
