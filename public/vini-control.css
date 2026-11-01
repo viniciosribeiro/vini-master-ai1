@@ -203,3 +203,16 @@ body:before{background:radial-gradient(ellipse at 50% 0,#12326b94,transparent 50
 .vc-mission-project-label select{min-height:43px;padding:8px 11px;border-radius:13px}
 #vc-current-progress{width:0}
 .vc-favorite{cursor:pointer}
+
+/* Lightweight CSS robot illustration: no remote assets or image download. */
+.vc-vini-robot{width:88px;height:79px;border:2px solid #6edfff;border-radius:24px 24px 21px 21px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;background:linear-gradient(150deg,#d5faff,#588de9 44%,#112d76 79%);box-shadow:inset 0 3px 10px #ffffff99,0 0 22px #2edfff88;transform:translateY(-3px)}
+.vc-vini-robot:before{content:'';position:absolute;top:10px;left:10px;right:10px;height:37px;border-radius:13px;background:#071631;box-shadow:inset 0 0 10px #032964}
+.vc-vini-antenna{position:absolute;top:-17px;left:calc(50% - 2px);height:15px;width:4px;background:#90ffff;border-radius:4px}
+.vc-vini-antenna:after{content:'';width:9px;height:9px;position:absolute;top:-6px;left:-3px;border-radius:50%;background:#3eeaff;box-shadow:0 0 10px #44dfff}
+.vc-vini-eyes{position:relative;color:#55eeff;font-size:24px;letter-spacing:2px;font-weight:900;line-height:1.5;text-shadow:0 0 8px #16ceff}
+.vc-vini-chest{position:relative;color:#dfffff;font-style:italic;font-weight:1000;font-size:16px;line-height:1.1;text-shadow:0 0 5px #12e4ff}
+.vc-agent-card .vc-agent-face:before,.vc-agent-tile .vc-agent-face:before{content:'';height:6px;width:6px;border-radius:50%;position:absolute;top:-8px;left:calc(50% - 3px);background:var(--agent-color,#4ddfff);box-shadow:0 0 8px var(--agent-color,#4ddfff)}
+.vc-agent-card .vc-agent-face,.vc-agent-tile .vc-agent-face{position:relative;box-shadow:0 0 13px color-mix(in srgb,var(--agent-color) 42%,transparent),inset 0 0 12px #46cfff29}
+.vc-office-center .vc-orbit{max-height:174px}
+.vc-office-center .vc-office-logo{font-size:68px}
+@media(max-width:780px){.vc-office-center .vc-orbit{max-height:92px;width:120px}.vc-office-center .vc-office-logo{font-size:38px}.vc-vini-robot{width:69px;height:62px;border-radius:20px}.vc-vini-robot:before{height:29px;top:7px}.vc-vini-eyes{font-size:19px}.vc-vini-chest{font-size:12px}.vc-office-center{min-height:188px}}
