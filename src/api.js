@@ -141,7 +141,7 @@ export async function handleAPI(req,env){
     await env.DB.prepare('INSERT INTO code_jobs(id,project_id,request,provider) VALUES(?,?,?,?)').bind(id,row.id,request,normalizeProvider(data.provider||'auto')).run();
     try{await env.MISSIONS.create({id,params:{codeJobId:id}});}
     catch(e){await env.DB.prepare("UPDATE code_jobs SET status='failed',detail=? WHERE id=?").bind(String(e.message||e).slice(0,200),id).run();return fail('Falha ao iniciar Workflow.',503);}
-    await auditProject(env.DB,id,'code-job','Solicitação de código enviada ao Programador');
+    await auditProject(env.DB,row.id,'code-job','Solicitação de código enviada ao Programador: '+id);
     return respond({id,status:'queued'},201);
    }
    if(action==='jobs'&&method==='GET'){
