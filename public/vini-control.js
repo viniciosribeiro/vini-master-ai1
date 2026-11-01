@@ -9,11 +9,11 @@ const AGENTS=[
  {id:'designer',name:'gptdesign',role:'Design & UX',symbol:'✎',color:'#fc6dff'},
  {id:'qa',name:'gptqa',role:'Qualidade & Testes',symbol:'✓',color:'#35eab0'},
  {id:'infra',name:'gptinfra',role:'Infra & Segurança',symbol:'▤',color:'#a97eff'},
- {id:'pesquisa',name:'gptmap',role:'Pesquisa & Dados',symbol:'⌖',color:'#ffbc56'},
+ {id:'pesquisa',name:'Pesquisa',role:'Pesquisa & Dados',symbol:'⌖',color:'#ffbc56'},
  {id:'supervisor',name:'VINI',role:'Supervisor',symbol:'V',color:'#24eff7'}
 ];
 const escId=id=>String(id||'').replace(/[^a-zA-Z0-9_-]/g,'');
-const recent=(date,minutes=30)=>{const t=Date.parse(String(date||'').replace(' ','T')+'Z');return Number.isFinite(t)&&Math.abs(Date.now()-t)<=minutes*60000;};
+const recent=(date,minutes=30)=>{const raw=String(date||'').replace(' ','T');const t=Date.parse(/[zZ]$|[+-]\d\d:\d\d$/.test(raw)?raw:raw+'Z');return Number.isFinite(t)&&Math.abs(Date.now()-t)<=minutes*60000;};
 const live=()=>typeof state!=='undefined'&&state&&typeof state==='object'?state:{missions:[],runs:[],activity:[],agents:[],codeJobs:[],codeRuns:[]};
 const authenticated=()=>typeof authValidated!=='undefined'&&authValidated;
 const shell=(id,markup)=>{const root=make('div','vc-control-root');root.id=id;root.innerHTML=markup;return root;};
@@ -37,7 +37,7 @@ function header(icon,title,description){
  return '<div class="vc-header"><div><h1><span class="vc-heading-icon">'+icon+'</span>'+title+'</h1><p>'+description+'</p></div></div>';
 }
 function agentCard(a){
- const btn=make('button','vc-agent-card');btn.type='button';btn.dataset.agent=a.id;btn.style.setProperty('--agent-color',a.color);
+ const btn=make('button','vc-agent-card');btn.type='button';btn.dataset.agent=a.id;
  const face=make('span','vc-agent-face',a.symbol),text=make('span');
  text.append(make('strong','',a.name),make('small','vc-agent-caption','● Disponível · '+a.role));
  btn.append(face,text);
@@ -80,12 +80,15 @@ function buildProjects(){
  stat('✦','Sites verificados','vc-p-live','Validação por HTTP')+
  stat('◉','Integração GitHub','vc-p-github','Status consultado na conta')+'</div>'));
  const list=by('projects-list'),form=by('project-add-form');if(!list||!form)return;
- const layout=shell('vc-project-layout','<div class="vc-project-list-pane"><div class="vc-project-toolbar"><button class="vc-btn" data-project-view="all" data-selected="true">Meus Projetos</button><button class="vc-btn" data-project-view="favorites">☆ Favoritos</button><button class="vc-btn" data-project-view="archived">Arquivados</button><button class="vc-btn" data-project-view="integrations">Integrações</button><input id="vc-project-search" type="search" placeholder="Buscar projetos..." aria-label="Buscar projetos"></div><div id="vc-project-list-slot"></div><p class="vc-note">☆ Favoritos são salvos somente neste dispositivo.</p></div><div class="vc-project-new-pane"><div class="vc-action-line" style="margin-bottom:10px"><button class="vc-btn" id="vc-create-ai">✦ Criar com IA</button><button class="vc-btn" id="vc-create-manual" data-selected="true">+ Manual</button></div><div id="vc-project-form-slot"></div><div class="vc-template-row" id="vc-project-templates"><button class="vc-btn" data-template="turismo">✈ Turismo</button><button class="vc-btn" data-template="pousada">▣ Pousada</button><button class="vc-btn" data-template="restaurante">♨ Restaurante</button><button class="vc-btn" data-template="hotspot">◎ Hotspot</button></div></div>');
+ const layout=shell('vc-project-layout','<div class="vc-project-list-pane"><div class="vc-project-toolbar"><button class="vc-btn" data-project-view="all" data-selected="true">Meus Projetos</button><button class="vc-btn" data-project-view="favorites">☆ Favoritos</button><button class="vc-btn" data-project-view="archived">Arquivados</button><button class="vc-btn" data-project-view="integrations">Integrações</button><input id="vc-project-search" type="search" placeholder="Buscar projetos..." aria-label="Buscar projetos"></div><div id="vc-project-list-slot"></div><p class="vc-note">☆ Favoritos são salvos somente neste dispositivo.</p></div><div class="vc-project-new-pane"><div class="vc-action-line vc-project-create-actions"><button class="vc-btn" id="vc-create-ai">✦ Criar com IA</button><button class="vc-btn" id="vc-create-manual" data-selected="true">+ Manual</button></div><div id="vc-project-form-slot"></div><div class="vc-template-row" id="vc-project-templates"><button class="vc-btn" data-template="turismo">✈ Turismo</button><button class="vc-btn" data-template="pousada">▣ Pousada</button><button class="vc-btn" data-template="restaurante">♨ Restaurante</button><button class="vc-btn" data-template="hotspot">◎ Hotspot</button></div></div>');
  panel.querySelector('.project-create')?.insertAdjacentElement('beforebegin',layout);
  by('vc-project-list-slot').append(list);by('vc-project-form-slot').append(form);
  const title=[...panel.querySelectorAll('h2')].find(h=>h.textContent.trim()==='Portfólio');if(title)title.hidden=true;
  on('vc-create-ai','click',()=>{if(typeof show==='function')show('chat');void window.viniThreads?.createNewProject().catch(err=>alert(err.message));});
  on('vc-create-manual','click',()=>by('project-new-name')?.focus());
+ const refreshButton=make('button','vc-btn','↻ Atualizar');refreshButton.type='button';refreshButton.addEventListener('click',()=>by('projects-refresh')?.click());
+ const importButton=make('button','vc-btn','↓ GitHub');importButton.type='button';importButton.addEventListener('click',()=>by('projects-import')?.click());
+ layout.querySelector('.vc-project-toolbar')?.append(refreshButton,importButton);
  const examples={turismo:['Operadora de turismo','Portal de passeios, reservas e parceiros.','cloudflare'],pousada:['Nova pousada','Gestão de hospedagens, calendário e reservas.','cloudflare'],restaurante:['Restaurante e delivery','PDV, cardápio, estoque e pedidos.','cloudflare'],hotspot:['Hotspot comunitário','Acesso Wi-Fi com gerenciamento de clientes.','cloudflare']};
  by('vc-project-templates')?.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
   const x=examples[b.dataset.template];if(!x)return;by('project-new-name').value=x[0];by('project-new-description').value=x[1];by('project-new-platform').value=x[2];by('project-new-name').focus();
@@ -111,7 +114,7 @@ function applyProjectFilter(){
   }
   star.textContent=favorites.has(id)?'★':'☆';star.setAttribute('aria-pressed',String(favorites.has(id)));
   const found=(project.name+' '+(project.description||'')+' '+(project.repo||'')).toLocaleLowerCase('pt-BR').includes(term);
-  card.hidden=!found||!(tab==='all'&&project.status==='active'||tab==='favorites'&&favorites.has(id)||tab==='archived'&&project.status!=='active'||tab==='integrations'&&!!project.repo);
+  card.hidden=!found||!(tab==='all'&&project.status==='active'||tab==='favorites'&&favorites.has(id)||tab==='archived'&&project.status==='archived'||tab==='integrations'&&!!project.repo);
  });
 }
 function buildMissions(){
@@ -123,9 +126,9 @@ function buildMissions(){
  stat('✓','Concluídas','vc-m-done','Missões no histórico')+
  stat('☷','Na fila','vc-m-queued','Aguardando processamento')+
  stat('⚠','Com falha','vc-m-failed','Precisam de atenção')+'</div><div class="vc-header"><h2>Equipe em ação <small>(6 agentes cadastrados)</small></h2><span id="vc-m-team-state" class="vc-pill" data-state="idle">Sem agentes ativos</span></div><div class="vc-agent-strip" id="vc-mission-team"></div>'));
- for(const a of AGENTS){const tile=make('button','vc-agent-tile');tile.type='button';tile.dataset.agent=a.id;tile.append(make('span','vc-agent-face',a.symbol),make('strong','',a.name),make('small','vc-agent-caption','Disponível'));tile.style.setProperty('--agent-color',a.color);tile.addEventListener('click',()=>openAgent(a.id));by('vc-mission-team').append(tile);}
+ for(const a of AGENTS){const tile=make('button','vc-agent-tile');tile.type='button';tile.dataset.agent=a.id;tile.append(make('span','vc-agent-face',a.symbol),make('strong','',a.name),make('small','vc-agent-caption','Disponível'));tile.addEventListener('click',()=>openAgent(a.id));by('vc-mission-team').append(tile);}
  const form=by('mission-form');if(form){
-  const formtop=shell('vc-mission-top','<div class="vc-mission-form-head"><h2>✧ Nova missão</h2><span class="vc-note">A execução depende do Workflow e da cota configurada.</span></div><div class="vc-action-line" style="margin-bottom:11px"><button type="button" class="vc-btn" id="vc-mission-guided" data-selected="true">✦ Equipe IA</button><button type="button" class="vc-btn" id="vc-mission-blank">✎ Descrição livre</button></div>');
+  const formtop=shell('vc-mission-top','<div class="vc-mission-form-head"><h2>✧ Nova missão</h2><span class="vc-note">A execução depende do Workflow e da cota configurada.</span></div><div class="vc-action-line vc-mission-mode-actions"><button type="button" class="vc-btn" id="vc-mission-guided" data-selected="true">✦ Equipe IA</button><button type="button" class="vc-btn" id="vc-mission-blank">✎ Descrição livre</button></div>');
   form.insertAdjacentElement('afterbegin',formtop);
   const picker=make('label','vc-mission-project-label','Projeto relacionado (opcional para missões gerais)');
   const select=make('select');select.id='vc-mission-project';select.append(make('option','','Missão geral · sem projeto'));select.firstChild.value='';
@@ -133,7 +136,10 @@ function buildMissions(){
   on('vc-mission-guided','click',()=>{by('vc-mission-guided').dataset.selected='true';by('vc-mission-blank').dataset.selected='false';by('mission-description').placeholder='Descreva objetivo, resultado esperado, requisitos e critérios de aceite. A equipe fará a análise especializada.';by('mission-description').focus();});
   on('vc-mission-blank','click',()=>{by('vc-mission-guided').dataset.selected='false';by('vc-mission-blank').dataset.selected='true';by('mission-description').placeholder='Digite sua solicitação diretamente...';by('mission-description').focus();});
  }
- form?.insertAdjacentElement('afterend',shell('vc-mission-active','<h2>Missão acompanhada</h2><p id="vc-current-mission-title">Nenhuma missão em execução</p><div class="vc-meter"><span id="vc-current-progress" style="width:0%"></span></div><p class="vc-note" id="vc-current-phase">Aguardando tarefa registrada no D1.</p>'));
+ const reuse=make('button','vc-btn','↻ Reutilizar última missão');reuse.type='button';
+ reuse.addEventListener('click',()=>{const selected=live().missions?.[0];if(!selected){notify('Ainda não existe missão para reutilizar.');return;}by('mission-description').value=selected.description||selected.title||'';by('mission-description').focus();});
+ form?.querySelector('button[type=submit]')?.insertAdjacentElement('beforebegin',reuse);
+ form?.insertAdjacentElement('afterend',shell('vc-mission-active','<h2>Missão acompanhada</h2><p id="vc-current-mission-title">Nenhuma missão em execução</p><div class="vc-meter"><span id="vc-current-progress"></span></div><p class="vc-note" id="vc-current-phase">Aguardando tarefa registrada no D1.</p>'));
  const list=by('mission-list');if(list)list.insertAdjacentElement('beforebegin',shell('vc-mission-controls','<div class="vc-search-line"><input id="vc-mission-search" type="search" placeholder="Buscar no histórico de missões..." aria-label="Pesquisar missões"><select id="vc-mission-filter" aria-label="Filtrar missões"><option value="all">Todas</option><option value="active">Em andamento</option><option value="done">Concluídas</option><option value="failed">Falhas</option></select></div>'));
  on('vc-mission-search','input',applyMissionFilter);on('vc-mission-filter','change',applyMissionFilter);
  if(list)new MutationObserver(applyMissionFilter).observe(list,{childList:true});
@@ -177,7 +183,7 @@ function buildNetwork(){
 }
 function buildChat(){
  const panel=by('section-chat')?.querySelector('.chat-main-panel');if(!panel)return;
- const node=shell('vc-chat-network','<div class="vc-chat-network-head"><div><strong>◈ Rede neural ao vivo</strong><small style="display:block">Orquestração baseada em registros reais</small></div><span class="vc-pill" data-state="idle" id="vc-chat-network-pill">Sem execução</span></div><div class="vc-neural-mini"><div class="vc-orbit"><span class="vc-office-logo">V</span></div></div><div class="vc-chat-actions-bottom"><button class="vc-btn" id="vc-chat-network-open">Abrir Rede Neural</button><button class="vc-btn" id="vc-chat-history">Organizar histórico antigo</button></div>');
+ const node=shell('vc-chat-network','<div class="vc-chat-network-head"><div><strong>◈ Rede neural ao vivo</strong><small class="vc-block-subtitle">Orquestração baseada em registros reais</small></div><span class="vc-pill" data-state="idle" id="vc-chat-network-pill">Sem execução</span></div><div class="vc-neural-mini"><div class="vc-orbit"><span class="vc-office-logo">V</span></div></div><div class="vc-chat-actions-bottom"><button class="vc-btn" id="vc-chat-network-open">Abrir Rede Neural</button><button class="vc-btn" id="vc-chat-history">Organizar histórico antigo</button></div>');
  const messages=by('messages');messages?.insertAdjacentElement('beforebegin',node);
  on('vc-chat-network-open','click',()=>show('agents'));
  on('vc-chat-history','click',async()=>{try{const list=await window.viniThreads.reload();const old=list.find(x=>x.id==='legacy-history');if(!old){notify('Não existe histórico antigo não vinculado.');return;}window.viniThreads.openProjectPicker('move',old);}catch(e){notify(e.message);}});
