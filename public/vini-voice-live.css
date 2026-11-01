@@ -63,3 +63,6 @@
 .vs-dialog[data-status=error] .vs-status{color:#ffcfab!important}
 .vs-dialog[data-status=speaking] .vs-core{animation-duration:1.2s!important}
 @media(max-width:780px){.vs-consent{font-size:12px;padding:10px 8px}.vs-dialog .vs-settings{margin-bottom:4px}}
+
+#vs-play-audio[hidden]{display:none!important}
+#vs-play-audio:not([hidden]){display:inline-flex!important;border:2px solid #4fd9fb!important;background:#114c82!important;color:#fff!important;min-height:48px!important;font-weight:800!important}

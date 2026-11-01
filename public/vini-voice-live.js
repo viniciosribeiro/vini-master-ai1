@@ -39,6 +39,7 @@ function stopAudio(){
  state.controller=null;
  const audio=state.audio;state.audio=null;if(audio){audio.onended=audio.onerror=null;try{audio.pause();audio.removeAttribute('src');audio.load();}catch{}}
  state.speaking=false;window.jarvisVoiceSpeaking=false;
+ const playButton=$('vs-play-audio');if(playButton)playButton.hidden=true;
 }
 function pause(){state.paused=true;state.thinking=false;clearTimers();stopMic();stopAudio();status('Pausado. Toque em Retomar.','paused');render();}
 function close(){
@@ -99,10 +100,15 @@ function audioReady(url,seq,preview=false){
  audio.onended=audio.onerror=()=>{
   if(seq!==state.requestSeq)return;
   state.audio=null;state.speaking=false;window.jarvisVoiceSpeaking=false;
+  const playback=$('vs-play-audio');if(playback)playback.hidden=true;
   if(state.active&&!state.paused){status('Pode falar novamente.','listening');schedule(300);}
   render();
  };
- audio.play().catch(()=>{if(seq!==state.requestSeq)return;state.audio=null;state.speaking=false;status('O Android bloqueou o áudio. Toque em Ouvir amostra novamente.','error');render();schedule(500);});
+ audio.play().catch(()=>{
+  if(seq!==state.requestSeq)return;
+  const playback=$('vs-play-audio');if(playback)playback.hidden=false;
+  status('O navegador bloqueou a reprodução automática. Toque em ▶ Ouvir resposta. O áudio gerado foi preservado.','error');render();
+ });
  status(preview?'Reproduzindo amostra da OpenAI…':'VINI falando com voz da OpenAI.','speaking');render();
 }
 async function speak(text,preview=false){
@@ -129,7 +135,8 @@ async function speak(text,preview=false){
   if(seq!==state.requestSeq)return;
   state.speaking=false;window.jarvisVoiceSpeaking=false;
   status('Voz OpenAI indisponível: '+String(e.message||e).slice(0,180),'error');
-  render();schedule(800);
+  state.paused=true; // Do not loop costly requests when the paid provider is unavailable.
+  render();
  }
 }
 async function open(){
@@ -171,7 +178,9 @@ function mount(){
  const controls=make('div','vs-controls');
  for(const [id,title] of [['vs-toggle','Pausar'],['vs-interrupt','Interromper'],['vs-end','Encerrar']]){
   const b=make('button','vs-btn',title);b.id=id;b.type='button';controls.append(b);
- }root.append(controls);
+ }
+ const playback=make('button','vs-btn','▶ Ouvir resposta');playback.id='vs-play-audio';playback.type='button';playback.hidden=true;controls.append(playback);
+ root.append(controls);
  const settingsBox=make('details','vs-settings');settingsBox.open=true;settingsBox.append(make('summary','','Voz OpenAI · selecionar e testar'));
  const row=make('div','vs-row'),lbl=make('label','','Voz natural');lbl.htmlFor='vs-voices';
  const sel=make('select');sel.id='vs-voices';row.append(lbl,sel);
@@ -184,6 +193,11 @@ function mount(){
  settingsBox.append(inf);root.append(settingsBox);dlg.append(root);document.body.append(dlg);
  closeBtn.addEventListener('click',close);dlg.addEventListener('cancel',e=>{e.preventDefault();close();});
  $('vs-toggle').addEventListener('click',()=>{if(state.paused){if(!settings.approved){status('Autorize a voz OpenAI antes de retomar.','error');return;}state.paused=false;state.thinking=false;render();schedule(100);}else pause();});
+ $('vs-play-audio').addEventListener('click',()=>{
+  const audio=state.audio;if(!audio)return;
+  audio.play().then(()=>{ $('vs-play-audio').hidden=true;status('Reproduzindo a resposta de voz natural.','speaking'); })
+   .catch(()=>status('Não foi possível reproduzir áudio neste dispositivo. Verifique volume e permissões.','error'));
+ });
  $('vs-interrupt').addEventListener('click',()=>{stopAudio();state.thinking=false;render();status('Pode falar novamente.','listening');schedule(100);});
  $('vs-end').addEventListener('click',close);
  sel.addEventListener('change',()=>{settings.voice=sel.value;save();});

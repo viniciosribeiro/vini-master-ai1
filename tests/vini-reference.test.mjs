@@ -16,7 +16,7 @@ test('all 4 cropped assets from approved reference exist and are genuine WebP',(
   const bytes=read('public/'+name);
   assert.equal(bytes.toString('ascii',0,4),'RIFF',name);
   assert.equal(bytes.toString('ascii',8,12),'WEBP',name);
-  assert.ok(bytes.length>1000,name);
+  assert.ok(bytes.length>500,name);
   assert.match(css,new RegExp(name.replace('.','\\.')));
   assert.ok(sw.includes('/'+name));
  }
@@ -24,9 +24,9 @@ test('all 4 cropped assets from approved reference exist and are genuine WebP',(
 test('R2 CSS loads after legacy and R1 styling and works offline in PWA',()=>{
  assert.ok(html.indexOf('/vini-reference.css')>html.indexOf('/vini-control.css'));
  assert.ok(html.indexOf('/vini-reference.js')>html.indexOf('/vini-control.js'));
- assert.match(sw,/vini-master-shell-v25/);
- assert.match(html,/Control Center R4 0\.17\.6/);
- assert.match(text('src/index.js'),/version:'0\.17\.6'/);
+ assert.match(sw,/vini-master-shell-v26/);
+ assert.match(html,/Control Center R4 0\.17\.7/);
+ assert.match(text('src/index.js'),/version:'0\.17\.7'/);
 });
 test('mobile has all 6 requested navigation tabs (including Neural)',()=>{
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/);

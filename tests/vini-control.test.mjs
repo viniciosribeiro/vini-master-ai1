@@ -15,9 +15,9 @@ const app=read('public/app.js');
 
 test('control center is loaded as static self-hosted assets after base scripts',()=>{
  assert.ok(html.includes('/vini-control.css?v=15'));
- assert.ok(html.includes('/vini-control.js?v=22'));
+ assert.ok(html.includes('/vini-control.js?v=23'));
  assert.ok(html.indexOf('/vini-control.js')>html.indexOf('/projects.js'));
- assert.match(read('public/sw.js'),/vini-master-shell-v25/);
+ assert.match(read('public/sw.js'),/vini-master-shell-v26/);
  assert.ok(read('public/sw.js').includes('/vini-control.js'));
  assert.ok(read('public/sw.js').includes('/vini-control.css'));
  assert.doesNotThrow(()=>new Script(script,{filename:'vini-control.js'}));

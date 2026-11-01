@@ -73,7 +73,8 @@ function buildOffice(){
  '<div class="vc-office-grid"><div id="vc-office-left" class="vc-agent-col"></div><div class="vc-office-center"><div class="vc-orbit"><span class="vc-office-logo">V</span></div><div class="vc-vini-robot" aria-hidden="true"><span class="vc-vini-antenna"></span><span class="vc-vini-eyes">◡ ◡</span><span class="vc-vini-chest">V</span></div><strong>VINI · Supervisor</strong><small id="vc-office-current" class="vc-note">Nenhuma missão em execução</small></div><div id="vc-office-right" class="vc-agent-col"></div></div>'+
  '<div class="vc-flowbar"><div class="vc-flowstep" id="vc-flow-0">Entrada</div><div class="vc-flowstep" id="vc-flow-1">Planejamento</div><div class="vc-flowstep" id="vc-flow-2">Agentes</div><div class="vc-flowstep" id="vc-flow-3">Revisão</div><div class="vc-flowstep" id="vc-flow-4">Resultado</div></div>'+
  '<div class="vc-office-bottom"><small id="vc-office-counter">0 agentes executando agora</small><button type="button" class="vc-btn" id="vc-office-diario">Ver diário real</button></div><div class="vc-feed-heading">Últimas ações auditadas</div><div class="vc-office-feed" id="vc-office-feed"><div class="vc-event">Nenhum evento carregado</div></div>');
- AGENTS.filter(x=>x.id!=='supervisor').forEach((a,i)=>by(i%2?'vc-office-right':'vc-office-left').append(agentCard(a)));
+ const left=office.querySelector('#vc-office-left'),right=office.querySelector('#vc-office-right');
+ AGENTS.filter(x=>x.id!=='supervisor').forEach((a,i)=>(i%2?right:left).append(agentCard(a)));
  const metrics=section.querySelector('.metrics');metrics?.insertAdjacentElement('afterend',office);
  by('vc-office-diario')?.addEventListener('click',()=>{by('vini-live-open')?.click();});
 }
