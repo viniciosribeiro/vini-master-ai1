@@ -13,7 +13,7 @@ test('Direct Vercel preview frontend loads as independent module after voice stu
  assert.ok(html.indexOf('vini-direct-preview.js?v=20')>html.indexOf('vini-voice-live.js?v=18'));
  assert.match(sw,/vini-direct-preview\.js/);
  assert.match(sw,/vini-master-shell-v20/);
- assert.match(worker,/version:'0\.17\.1'/);
+ assert.match(worker,/version:'0\.17\.2'/);
  assert.ok(css.includes('.vini-direct-lab'));
 });
 test('API requires original session, same-origin and explicit preview confirmation',()=>{
