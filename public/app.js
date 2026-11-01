@@ -341,4 +341,11 @@ async function initializeAccess(){
  }
 }
 initializeAccess();
-setInterval(()=>{if(token&&authValidated)refresh()},10000);
+// Adaptive polling: lively during actual work; economical when idle and offline.
+let refreshHeartbeat=0;
+setInterval(()=>{
+ if(!token||!authValidated||document.hidden||navigator.onLine===false)return;
+ refreshHeartbeat++;
+ const active=(state.missions||[]).some(m=>m.status==='running'||m.status==='queued')||(state.codeJobs||[]).some(j=>j.status==='working'||j.status==='queued');
+ if(active||refreshHeartbeat%5===0)refresh();
+},3000);
