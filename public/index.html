@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition 0.8.0</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=22"><link rel="stylesheet" href="/jarvis.css?v=22">
-<script src="/app.js?v=22" defer></script><script src="/projects.js?v=22" defer></script><script src="/pwa.js?v=22" defer></script><script src="/office-live.js?v=22" defer></script><script src="/jarvis.js?v=22" defer></script><script src="/live-monitor.js?v=22" defer></script></head>
+<script src="/app.js?v=22" defer></script><script src="/projects.js?v=22" defer></script><script src="/pwa.js?v=22" defer></script><script src="/office-live.js?v=22" defer></script><script src="/jarvis.js?v=22" defer></script><script src="/live-monitor.js?v=22" defer></script><script src="/evidence.js?v=23" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -34,6 +34,11 @@
 <div id="vini-live-events" class="vini-live-events" role="log" aria-live="polite" aria-relevant="additions"></div>
 <details class="vini-legacy-history"><summary>Consultar histórico anterior</summary><div id="timeline" class="timeline"><p class="empty">Entre com sua chave de acesso para visualizar atividades reais.</p></div></details>
 </aside></div>
+<section class="panel padded vini-proof-section" aria-label="Comprovantes de execução">
+<div class="vini-proof-title"><div><h2>Comprovantes de execução</h2><p>Relatório não é código publicado. Mostramos apenas o que ficou registrado.</p></div><button class="secondary" type="button" id="vini-proof-refresh">Verificar agora</button></div>
+<div class="vini-proof-counts" id="vini-proof-counts" aria-live="polite">Carregando resultados...</div>
+<div id="vini-proof-list" class="vini-proof-list"><p class="muted">Buscando comprovantes autenticados...</p></div>
+</section>
 <div class="bottom"><section class="panel conversation"><h2>💬 Converse com o supervisor</h2><p>Dê uma tarefa, tire dúvidas ou peça um resumo.</p><form id="quick-chat" class="inline-form"><input id="quick-message" maxlength="8000" placeholder="Ex.: Organize os próximos passos do meu projeto..." required><button type="submit" class="primary">Enviar ↗</button></form><div id="quick-response" class="quick-response" aria-live="polite"></div></section><section class="panel engines"><h2>◈ Provedores de IA</h2><label>Modo de inteligência<select id="provider-select"><option value="auto">Automático (Cloudflare → NVIDIA)</option><option value="cloudflare">Somente Cloudflare AI</option><option value="nvidia">Somente NVIDIA</option></select></label><button id="open-provider-connect" type="button" class="secondary provider-open">Conectar NVIDIA e testar IAs</button><p class="muted">Cloudflare AI já usa o binding automático. NVIDIA exige uma chave sua, validada dentro do painel.</p></section></div>
 </section>
 <section id="section-projects" class="view" hidden>
@@ -82,7 +87,7 @@
 <section id="section-chat" class="view"><div class="panel padded">
 <div class="jarvis-chat-header"><div><h1 class="jarvis-chat-title">VINI · Chat Neural</h1><span class="chat-status">Pronto para conversar</span></div><button id="jarvis-chat-office" type="button" class="secondary" aria-label="Abrir escritório dos agentes">Ver equipe ↗</button></div>
 <div id="jarvis-chat-hero" class="jarvis-chat-hero"><div class="jarvis-core"></div><div class="jarvis-hero-copy"><strong>Olá! Sou o VINI.</strong><span>Seu supervisor de IA. Como posso ajudar?</span></div><div class="jarvis-intro-buttons"><button type="button" id="jarvis-chat-new">+ Novo projeto</button><button type="button" id="jarvis-chat-activities">Ver atividades</button></div></div>
-<div class="vini-chat-actions"><button id="vini-live-chat-open" type="button" class="secondary">◉ Ações do VINI · diário</button></div>
+<div class="vini-chat-actions"><button id="vini-live-chat-open" type="button" class="secondary">◉ Ações do VINI · diário</button><button id="vini-chat-proofs" type="button" class="secondary">✓ Ver resultados comprovados</button></div>
 <div id="jarvis-task-banner" class="jarvis-task-banner" role="status" aria-live="polite" hidden><span id="jarvis-task-text"></span><button type="button" id="jarvis-task-open">Ver escritório</button></div>
 <div id="messages" class="messages" role="log" aria-label="Histórico da conversa" aria-live="polite"></div>
 <button id="begin-project-chat" class="secondary begin-project-chat" type="button">+ Nova entrevista (até 5 perguntas)</button>
