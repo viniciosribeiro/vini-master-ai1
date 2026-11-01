@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {routeWorkIntent,findTargetProject,delegateChatWork} from '../src/orchestrator.js';
+import {routeWorkIntent,findTargetProject,resolvedFollowUp,delegateChatWork} from '../src/orchestrator.js';
 
 test('greetings, questions and negative orders never wake costly agents',()=>{
  for(const input of ['Oi Vini','Como corrigir o bug desse sistema?','Não faça alteração no projeto','Só me explique como publicar o site','Quais os custos da Cloudflare?'])
@@ -13,6 +13,12 @@ test('correct expert teams chosen for concrete project work',()=>{
  assert.ok(design.agents.includes('designer'));
  assert.equal(routeWorkIntent('Faça uma análise do sistema')?.codeRequested,false);
  assert.equal(routeWorkIntent('Implemente uma função no aplicativo')?.codeRequested,true);
+});
+test('faça tudo confirms last concrete request, not already queued work',()=>{
+ const previous='Você consegue corrigir o código do aplicativo de reservas?';
+ assert.match(resolvedFollowUp('Faça tudo',previous,'Pode organizar essa mudança.'),/Execute a tarefa/);
+ assert.equal(resolvedFollowUp('Faça tudo',previous,'Já abri uma **missão real** para isso.'),null);
+ assert.equal(resolvedFollowUp('Faça tudo','Oi','Pode fazer.'),null);
 });
 test('never pick wrong private repository for coding',()=>{
  const projects=[{id:'a',name:'Marimar',repo:'viniciosribeiro/marimar-site',status:'active'},{id:'b',name:'Sereia360',repo:'viniciosribeiro/sereia360',status:'active'}];
