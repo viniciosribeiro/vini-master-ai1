@@ -1,3 +1,12 @@
+# VINI MASTER AI 0.12.0 — Conversa contextual e estado real dos agentes
+
+- Corrigida a regressão em que o filtro de promessas substituía indiscriminadamente mensagens pela resposta "Não executei esse build / Conecte Vercel", mesmo quando o usuário reclamava dos agentes parados. O filtro agora bloqueia somente alegações de execução externa sem comprovante e preserva as partes úteis da resposta, sem citar plataformas não solicitadas.
+- Pedidos explícitos de build/deploy continuam sujeitos à validação de projeto e integração, mas conversas sobre falhas anteriores e perguntas não são confundidas com comandos de deployment.
+- Mensagens como "você só fala, os agentes estão parados" recebem uma resposta determinística e atualizada a partir do Cloudflare D1, informando quantidade de agentes marcados trabalhando, última missão e status. Nenhuma IA inventa execução.
+- O Chat exibe ações "Ver diário real" e "Ver comprovantes" associadas à resposta operacional. O status "VINI está pensando" é resetado assim que a resposta chega, antes de consultas secundárias de atualização.
+- Novos testes em tests/work-status.test.mjs e alterações nos testes de guardas para prevenir a regressão, incluindo a mesma frase da captura enviada pelo usuário.
+- Limite: estados provêm dos registros persistidos; missões de análise não são commits, PRs nem publicações. Teste autenticado de execução contínua na conta do usuário ainda é necessário para comprovar trabalho externo.
+
 # VINI MASTER AI 0.11.0 — Correções Vercel e login persistente
 
 - Corrigido erro concreto da Cloudflare Workers: fetch de Vercel com redirect: 'error' falhava antes da requisição. Agora usa 'manual' e rejeita HTTP 3xx, sem encaminhar Bearer token a outro host.
