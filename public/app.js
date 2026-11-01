@@ -22,6 +22,7 @@ function show(section){
  document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.section===section));
  if(section==='chat')loadChat();
  if(section==='projects'&&typeof loadProjects==='function')loadProjects();
+ if(section==='memory'&&typeof loadWorkProfile==='function')loadWorkProfile();
 }
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section)));
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text);return node;}
