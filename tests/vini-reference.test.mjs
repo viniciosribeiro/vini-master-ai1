@@ -31,7 +31,7 @@ test('R2 CSS loads after legacy and R1 styling and works offline in PWA',()=>{
 test('mobile has all 6 requested navigation tabs (including Neural)',()=>{
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/);
  assert.match(css,/\.sidebar \.nav\[data-section="agents"\]\{display:flex!important\}/);
- assert.match(js,/program\.textContent='Rede Neural'/);
+ assert.match(js,/program\.textContent='Agentes'/);
 });
 test('office art is an illustration, while live status comes from D1-backed state',()=>{
  assert.match(js,/getState\(\)/);
