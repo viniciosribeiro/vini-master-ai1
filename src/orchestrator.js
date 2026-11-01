@@ -67,7 +67,7 @@ export async function delegateChatWork(env,request,provider='auto',projects=[]){
    try{
     await env.MISSIONS.create({id,params:{codeJobId:id}});
     try{await db.prepare('INSERT INTO activity(agent_id,description) VALUES(?,?)').bind('supervisor','Delegou ao Programador: '+intent.title.slice(0,160)).run();}catch{ /* do not mark launched Workflow failed if telemetry logging fails */ }
-    return {reply:'Entendi. Deleguei a implementação de **'+target.name+'** ao Programador. Você poderá acompanhar o código e a revisão no escritório. A entrega será um **pull request rascunho no GitHub**; não vou anunciar deploy em produção sem verificação.',delegation:{status:'queued',kind:'code',codeJobId:id,projectId:target.id,agents:['supervisor','programador'],title:intent.title}};
+    return {reply:'Entendi. Deleguei a implementação de **'+target.name+'** ao Programador. Você poderá acompanhar o código e a revisão no escritório. A entrega será um **pull request rascunho no GitHub**; não vou anunciar deploy em produção sem verificação.',delegation:{status:'queued',kind:'code',codeJobId:id,projectId:target.id,agents:intent.agents.filter(x=>['supervisor','programador','designer','qa'].includes(x)),title:intent.title}};
    }catch(e){
     await db.prepare("UPDATE code_jobs SET status='failed',detail=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind('Workflow não iniciou: '+String(e.message||e).slice(0,180),id).run();
     return {reply:'O trabalho foi registrado, mas o Workflow não iniciou. O painel mostrará o erro real; nenhum código foi publicado.',delegation:{status:'failed',codeJobId:id}};
