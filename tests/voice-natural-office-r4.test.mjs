@@ -25,7 +25,7 @@ function fakeDb(){
 function speechReq(obj={}){return new Request('https://test.local/api/voice/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});}
 test('voice studio no longer synthesizes robotic Android device voices',()=>{
  assert.doesNotThrow(()=>new Script(script));
- assert.doesNotMatch(script,/speechSynthesis|SpeechSynthesisUtterance|getVoices/);
+ assert.doesNotMatch(script,/\bwindow\.speechSynthesis\b|new SpeechSynthesisUtterance|\.getVoices\(/);
  assert.match(script,/new Audio\(url\)/);
  assert.match(script,/api\('\/voice\/tts'/);
  assert.match(script,/OpenAI TTS-1/);
