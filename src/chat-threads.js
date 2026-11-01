@@ -5,7 +5,10 @@ export async function setupThreads(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS chat_threads (id TEXT PRIMARY KEY,project_id TEXT,title TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived','trashed')),is_draft INTEGER NOT NULL DEFAULT 0,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
  await db.prepare("CREATE INDEX IF NOT EXISTS idx_chat_threads_project ON chat_threads(project_id,status,updated_at)").run();
  const cols=await db.prepare('PRAGMA table_info(messages)').all();
- if(!(cols.results||[]).some(x=>x.name==='thread_id'))await db.prepare('ALTER TABLE messages ADD COLUMN thread_id TEXT').run();
+ if(!(cols.results||[]).some(x=>x.name==='thread_id')){
+  try{await db.prepare('ALTER TABLE messages ADD COLUMN thread_id TEXT').run();}
+  catch(e){if(!/duplicate column/i.test(String(e.message||e)))throw e;}
+ }
  await db.prepare('CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id,id)').run();
  const legacy=await db.prepare('SELECT COUNT(*) AS n FROM messages WHERE thread_id IS NULL').first();
  if(Number(legacy?.n||0)>0){
