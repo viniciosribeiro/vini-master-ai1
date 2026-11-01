@@ -3,11 +3,12 @@
  const button=document.getElementById('install-vini');
  let deferred=null;
  function installed(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
- function update(){button.hidden=installed()||!deferred;}
+ function update(){button.hidden=installed();}
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferred=event;update();});
  window.addEventListener('appinstalled',()=>{deferred=null;update();});
+ update();
  button.addEventListener('click',async()=>{
-  if(deferred){const prompt=deferred;deferred=null;button.hidden=true;await prompt.prompt();try{await prompt.userChoice;}catch{}return;}
+  if(deferred){const prompt=deferred;deferred=null;await prompt.prompt();try{await prompt.userChoice;}catch{}return;}
   alert('No Chrome do Android, abra o menu ⋮ e escolha Instalar aplicativo ou Adicionar à tela inicial.');
  });
  if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
