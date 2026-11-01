@@ -105,7 +105,7 @@ dialog::backdrop{background:#020917bb!important}
 #section-office .office-work-summary{background:#0b304b!important;color:#9edbef!important;border:1px solid #235f83;margin:0 14px 10px;padding:9px 12px;border-radius:11px}
 #section-office .stage{aspect-ratio:auto!important;min-height:620px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:22px!important;background:radial-gradient(ellipse at 50% 36%,#18577e,#09182e 55%,#050e20 100%)!important;position:relative;overflow:visible!important}
 #section-office .connections{display:none}
-#section-office .station{position:relative!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;width:100%!important;min-width:0!important;max-width:100%!important;transform:none!important;display:flex!important;flex-direction:column-reverse!important;align-items:stretch!important;justify-content:flex-end!important;gap:2px;min-height:205px;height:auto;padding:6px!important;background:linear-gradient(170deg,#102946,#07182e)!important;border:1px solid #2a557e!important;border-radius:19px!important;box-shadow:0 12px 35px #0008!important;overflow:visible}
+#section-office .station{position:relative!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;width:100%!important;min-width:0!important;max-width:100%!important;transform:none!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-end!important;gap:2px;min-height:205px;height:auto;padding:6px!important;background:linear-gradient(170deg,#102946,#07182e)!important;border:1px solid #2a557e!important;border-radius:19px!important;box-shadow:0 12px 35px #0008!important;overflow:visible}
 #section-office .station.supervisor{grid-column:2;grid-row:1;border-color:#2ccbe7!important;box-shadow:0 0 0 1px #37c2e14a,0 0 25px #12c9f520!important}
 #section-office .station.programmer{grid-column:1;grid-row:1}
 #section-office .station.design{grid-column:3;grid-row:1}
@@ -262,3 +262,8 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
  body.jarvis-has-history .jarvis-core-ring{width:47px;height:47px}
  body.jarvis-has-history .jarvis-hero-unit{transform:scale(.32)}
 }
+
+/* Station visual order: robot first, label and real activity below. */
+#section-office .station .jarvis-unit{order:0}
+#section-office .station .station-label{order:1}
+#section-office .station .agent-popup{order:2}
