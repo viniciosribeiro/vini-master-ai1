@@ -1,0 +1,23 @@
+{
+  "name": "vini-master-ai1",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.142.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "MASTER_TOKEN": {
+        "description": "Obrigatório: crie uma chave privada aleatória de 40 ou mais caracteres. Não publique nem compartilhe esta chave."
+      },
+      "NVIDIA_API_KEY": {
+        "description": "Opcional. Chave gratuita NVIDIA NIM. Sem ela, o aplicativo usa Cloudflare Workers AI."
+      }
+    }
+  }
+}
