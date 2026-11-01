@@ -65,6 +65,7 @@ function renderOfficeLive(){
   if(!bubble){bubble=document.createElement('span');bubble.className='agent-popup';station.append(bubble);}
   let latest=events.find(e=>e.agent_id===id);
   let detail=active?(codeRun?.status==='working'?codeRun.detail:latest?.description||'Executando tarefa registrada'):expression==='waiting'?(codeRun?.detail||mission?.title||'Aguardando Workflow'):codeRun?.detail&&expression!=='idle'?codeRun.detail:latest?.description||'Sem tarefas em execução';
+  if(!active&&/Respondeu à conversa via/i.test(detail))detail='Conversa respondida · nenhuma ação externa executada';
   bubble.textContent=(active?'⚡ ':'')+String(detail).slice(0,92);
   bubble.dataset.active=active?'true':'false';
   bubble.title=active?'Atividade em execução no banco D1':'Última atividade registrada, sem execução atual';
@@ -76,7 +77,7 @@ function renderOfficeLive(){
   const newest=Math.max(...events.map(e=>Number(e.id)||0));
   if(lastEventSeen!==null&&newest>lastEventSeen){
    const arrived=events.filter(x=>Number(x.id)>lastEventSeen).reverse().slice(-2);
-   if(arrived.length)officeNotice(arrived[arrived.length-1]);
+   if(arrived.length&&!document.getElementById('section-office')?.hidden&&arrived.some(e=>!/Respondeu à conversa/i.test(e.description||''))&&(counts.size>0||queuedMission||queuedJob))officeNotice(arrived[arrived.length-1]);
   }
   lastEventSeen=Math.max(lastEventSeen||0,newest);
  }
