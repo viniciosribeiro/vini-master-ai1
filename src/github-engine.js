@@ -35,3 +35,10 @@ export async function codeMission(env,jobId,step){
   return {status:'done',pr};
  }catch(e){await update('failed',String(e.message||e).slice(0,550));return {status:'failed'};}
 }
+
+export async function listGitHubRepos(token){
+ const response=await fetch('https://api.github.com/user/repos?affiliation=owner&per_page=100&sort=updated',{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','User-Agent':'Vini-Master-AI','X-GitHub-Api-Version':'2022-11-28'}});
+ let data;try{data=await response.json();}catch{data={};}
+ if(!response.ok||!Array.isArray(data))throw Error('GitHub não autorizou listar os repositórios: '+response.status);
+ return data.filter(x=>validRepo(x.full_name)&&x.owner?.login).slice(0,100).map(x=>({name:String(x.name).slice(0,90),repo:x.full_name,description:String(x.description||'').slice(0,4000),archived:!!x.archived,private:!!x.private}));
+}
