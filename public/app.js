@@ -49,9 +49,23 @@ async function refreshVerifiedDeploymentLinks(){
 function cleanOldHtml(content){
  return String(content||'').replace(/<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,(_,link,label)=>String(label).replace(/<[^>]+>/g,'')+' ('+link+')').replace(/<br\s*\/?>/gi,'\n').replace(/<\/?(?:p|div|strong|em|span)[^>]*>/gi,'');
 }
+function appendExecutionReceipt(container,data){
+ const proof=el('div','chat-execution-receipt');
+ const kind=data?.kind||'conversation';proof.dataset.kind=kind;
+ const id=data?.id?' · ID '+String(data.id).slice(0,14):'';
+ proof.textContent=kind==='code_job'?'Trabalho de código registrado'+id+' — resultado real disponível em Comprovantes.':
+ kind==='mission'?'Missão de análise registrada'+id+' — isso ainda não significa que o projeto foi alterado.':
+ kind==='blocked'?'Não executado: ação externa indisponível. Nenhum build ou deploy foi disparado.':
+ 'Somente conversa por IA · nenhuma execução externa confirmada.';
+ container.append(proof);
+}
+const HISTORICAL_ACTION_CLAIM=/(?:\b(?:vou|vamos|acabei de|j[aá]|estou)\b[\s\S]{0,130}\b(?:for[cç]ar|disparar|executar|publicar|criar|implantar|rodar|fazer|entrar|acessar|subir)\b[\s\S]{0,100}\b(?:vercel|cloudflare|deploy|build|github|produ[cç][aã]o)\b)/iu;
 function renderAssistant(container,content,provider){
  container.replaceChildren();
  let value=cleanOldHtml(content).replace(/\r\n/g,'\n').trim();
+ if((provider==='nvidia'||provider==='cloudflare')&&HISTORICAL_ACTION_CLAIM.test(value)){
+  value='Esta resposta de IA prometia uma ação externa, mas não traz comprovante de execução. Consulte a área Comprovantes para conferir se algum trabalho real foi concluído.';
+ }
  const hits=Array.from(value.matchAll(/https?:\/\/[^\s<>"'()[\]{}]+/gi));
  const verifiedUrls=[],unconfirmedUrls=[];
  for(const match of hits){
@@ -83,6 +97,8 @@ function renderAssistant(container,content,provider){
   link.className='deploy-chat-verified';link.textContent='✓ Abrir '+entry.name+' (HTTP verificado) ↗';
   container.append(link);
  }
+ if(provider==='nvidia'||provider==='cloudflare')appendExecutionReceipt(container,{kind:'conversation'});
+ if(provider==='system')container.append(el('span','reply-provider','Registro do sistema · confira o status em Comprovantes'));
  if(provider){
   const names={nvidia:'NVIDIA',cloudflare:'Cloudflare AI'};
   container.append(el('span','reply-provider','Respondido por '+(names[provider]||provider)));
@@ -215,6 +231,9 @@ async function sendChat(content,origin){
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
+  if(result.execution&&result.execution.kind!=='conversation')appendExecutionReceipt(origin,result.execution);
+  if(result.execution?.kind==='blocked'||result.delegation?.status==='queued')document.dispatchEvent(new Event('vini:delegated'));
+
   if(result.delegation?.status==='queued'){
    const actions=el('div','delegation-actions');
    const office=el('button','secondary delegation-office','Ver equipe no escritório');
