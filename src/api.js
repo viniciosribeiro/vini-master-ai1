@@ -1,3 +1,4 @@
+import {isUnsupportedDeploymentRequest,guardUnsupportedActionClaims,executionReceipt} from './action-proof.js';
 import {readLiveEvents} from './live-events.js';
 import {routeWorkIntent,delegateChatWork,resolvedFollowUp} from './orchestrator.js';
 import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
@@ -235,7 +236,13 @@ export async function handleAPI(req,env){
    if(interview){
     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(interview.reply).run();
     await log(env,'supervisor',interview.intake?.status==='started'?'Projeto criado após entrevista':'Entrevista de projeto: pergunta em andamento');
-    return respond({...interview,provider:null,model:null});
+    return respond({...interview,provider:null,model:null,execution:{kind:interview.intake?.status==='started'?'project_catalog':'conversation',status:interview.intake?.status==='started'?'saved':'answered',id:interview.project?.id||null,externalWorkConfirmed:false,proofUrl:null}});
+   }
+   if(isUnsupportedDeploymentRequest(message)){
+    const reply='Não iniciei nenhum build ou deploy. O VINI não possui uma integração de execução com a Vercel ou uma ação de publicação configurada no aplicativo. O que está habilitado é análise de missões e, para um projeto com repositório e GitHub autorizado, geração de código e abertura de PR rascunho. Para disparar builds, será necessário implementar e autorizar um conector operacional de publicação. Não vou transformar seu pedido de deploy em uma análise que finja ter executado a operação.';
+    await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(reply).run();
+    await log(env,'supervisor','Ação externa bloqueada: pedido de build/deploy sem integração de execução configurada');
+    return respond({reply,provider:null,model:null,execution:{kind:'blocked',status:'not_executed',id:null,externalWorkConfirmed:false,proofUrl:null,reason:'executor_deploy_unavailable'}});
    }
    const match=message.match(/^(?:por favor[,:]?\s*)?(?:lembre(?:-se)?|guarde|memorize|não esqueça)(?:\s+de)?(?:\s+que)?[,\s:]+(.+)/iu);
    const saved=match?.[1]?.trim();
@@ -255,7 +262,7 @@ export async function handleAPI(req,env){
     const delegation=await delegateChatWork(env,taskInput,provider,available);
     if(delegation){
      await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(delegation.reply).run();
-     return respond({...delegation,provider:null,model:null});
+     return respond({...delegation,provider:null,model:null,execution:executionReceipt(delegation)});
     }
    }
    const [past,pinned,relevant,projects,decisions,profile,verifiedDeployments]=await Promise.all([
@@ -278,10 +285,11 @@ export async function handleAPI(req,env){
    const history=(past.results||[]).reverse().map(x=>({role:x.role,content:x.content.slice(0,MAX_MESSAGE)}));
    try{
     const answer=await callAI(env,[{role:'system',content:system+deployRules},...history],provider);
-    const safeReply=guardChatDeployment(answer.text,verifiedSites);
+    const protectedAnswer=guardUnsupportedActionClaims(answer.text);
+    const safeReply=guardChatDeployment(protectedAnswer.text,verifiedSites);
     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,?)").bind(safeReply,answer.provider).run();
     await log(env,'supervisor','Respondeu à conversa via '+answer.provider);
-    return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved});
+    return respond({reply:safeReply,provider:answer.provider,model:answer.model,memorySaved:!!saved,execution:{kind:'conversation',status:'answered',id:null,externalWorkConfirmed:false,proofUrl:null},claimBlocked:protectedAnswer.intercepted});
    }catch(e){return fail(String(e.message||e),503);}
   }
   if(path==='/api/missions'&&method==='POST'){
