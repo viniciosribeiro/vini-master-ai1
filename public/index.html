@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition 0.7.1</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=21"><link rel="stylesheet" href="/jarvis.css?v=21">
-<script src="/app.js?v=21" defer></script><script src="/projects.js?v=21" defer></script><script src="/pwa.js?v=21" defer></script><script src="/office-live.js?v=21" defer></script><script src="/jarvis.js?v=21" defer></script></head>
+<script src="/app.js?v=21" defer></script><script src="/projects.js?v=21" defer></script><script src="/pwa.js?v=21" defer></script><script src="/office-live.js?v=21" defer></script><script src="/jarvis.js?v=21" defer></script><script src="/live-monitor.js?v=22" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -26,7 +26,14 @@
 <button class="station infra" data-agent="infra" aria-label="Abrir infraestrutura"><span class="station-label"><b>▣ Infra</b><span class="state">● Disponível</span></span><span class="mini-platform"><span class="mini-person">👨🏻‍🔧</span><span class="mini-desk"><span class="screen">☁<i>━━━</i><i>━━━━</i></span></span></span></button>
 <button class="station research" data-agent="pesquisa" aria-label="Abrir pesquisa"><span class="station-label"><b>⌕ Pesquisa</b><span class="state">● Disponível</span></span><span class="mini-platform"><span class="mini-person">👩🏼‍💻</span><span class="mini-desk"><span class="screen">⌕<i>━━━━</i><i>━━━</i></span><span class="books">📚</span></span></span></button>
 </div></section>
-<aside class="activity panel"><div class="panel-heading"><h2>Atividade em tempo real</h2><span class="live">● D1</span></div><div id="timeline" class="timeline"><p class="empty">Entre com sua chave de acesso para visualizar atividades reais.</p></div></aside></div>
+<aside class="activity panel vini-live-panel">
+<div class="panel-heading"><h2>Diário da equipe</h2><span id="vini-live-status" class="live">Monitor conectando…</span></div>
+<p id="vini-live-subtitle" class="vini-live-subtitle">Aguardando dados do Cloudflare D1</p>
+<div class="vini-live-actions"><span id="vini-live-count">0 registros</span><button id="vini-live-open" type="button" class="secondary">Abrir diário completo</button><button id="vini-live-refresh" type="button" class="secondary" aria-label="Atualizar registro">↻</button></div>
+<div id="vini-live-filters" class="vini-live-filters" role="group" aria-label="Filtrar por agente"></div>
+<div id="vini-live-events" class="vini-live-events" role="log" aria-live="polite" aria-relevant="additions"></div>
+<details class="vini-legacy-history"><summary>Consultar histórico anterior</summary><div id="timeline" class="timeline"><p class="empty">Entre com sua chave de acesso para visualizar atividades reais.</p></div></details>
+</aside></div>
 <div class="bottom"><section class="panel conversation"><h2>💬 Converse com o supervisor</h2><p>Dê uma tarefa, tire dúvidas ou peça um resumo.</p><form id="quick-chat" class="inline-form"><input id="quick-message" maxlength="8000" placeholder="Ex.: Organize os próximos passos do meu projeto..." required><button type="submit" class="primary">Enviar ↗</button></form><div id="quick-response" class="quick-response" aria-live="polite"></div></section><section class="panel engines"><h2>◈ Provedores de IA</h2><label>Modo de inteligência<select id="provider-select"><option value="auto">Automático (Cloudflare → NVIDIA)</option><option value="cloudflare">Somente Cloudflare AI</option><option value="nvidia">Somente NVIDIA</option></select></label><button id="open-provider-connect" type="button" class="secondary provider-open">Conectar NVIDIA e testar IAs</button><p class="muted">Cloudflare AI já usa o binding automático. NVIDIA exige uma chave sua, validada dentro do painel.</p></section></div>
 </section>
 <section id="section-projects" class="view" hidden>
@@ -75,6 +82,7 @@
 <section id="section-chat" class="view"><div class="panel padded">
 <div class="jarvis-chat-header"><div><h1 class="jarvis-chat-title">VINI · Chat Neural</h1><span class="chat-status">Pronto para conversar</span></div><button id="jarvis-chat-office" type="button" class="secondary" aria-label="Abrir escritório dos agentes">Ver equipe ↗</button></div>
 <div id="jarvis-chat-hero" class="jarvis-chat-hero"><div class="jarvis-core"></div><div class="jarvis-hero-copy"><strong>Olá! Sou o VINI.</strong><span>Seu supervisor de IA. Como posso ajudar?</span></div><div class="jarvis-intro-buttons"><button type="button" id="jarvis-chat-new">+ Novo projeto</button><button type="button" id="jarvis-chat-activities">Ver atividades</button></div></div>
+<div class="vini-chat-actions"><button id="vini-live-chat-open" type="button" class="secondary">◉ Ações do VINI · diário</button></div>
 <div id="jarvis-task-banner" class="jarvis-task-banner" role="status" aria-live="polite" hidden><span id="jarvis-task-text"></span><button type="button" id="jarvis-task-open">Ver escritório</button></div>
 <div id="messages" class="messages" role="log" aria-label="Histórico da conversa" aria-live="polite"></div>
 <button id="begin-project-chat" class="secondary begin-project-chat" type="button">+ Nova entrevista (até 5 perguntas)</button>
@@ -102,4 +110,9 @@
 <button class="primary" id="settings-access">Configurar acesso 🔐</button><button class="secondary" id="export-data">Exportar dados JSON</button><button class="danger" id="erase-chat">Apagar histórico de conversas</button><p class="muted">Ao usar NVIDIA, trechos relevantes das suas conversas também são enviados à NVIDIA. Nunca insira senhas ou dados sensíveis na conversa.</p></div></section>
 </main></div></div>
 <dialog id="access-dialog" aria-labelledby="access-title"><form id="access-form"><h2 id="access-title">🔐 Entrar no VINI MASTER AI</h2><p>Digite a senha <strong>MASTER_TOKEN</strong> que está nos <strong>Secrets do Worker vini-master-ai1</strong>, no ambiente Produção. <strong>Não é a chave NVIDIA.</strong></p><p id="access-hint" class="muted">A senha será conferida pelo servidor antes de ser salva nesta sessão.</p><label for="access-token">Senha do painel (MASTER_TOKEN)<input id="access-token" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="24" required></label><p id="access-error" role="alert" class="auth-error" hidden></p><div class="dialog-actions"><button type="button" id="access-cancel" class="secondary">Cancelar</button><button type="submit" id="access-submit" class="primary">Verificar e entrar</button></div><p class="muted">Não sabe qual senha usar? No Cloudflare Dashboard → Workers &amp; Pages → vini-master-ai1 → Settings → Variables and Secrets, substitua o Secret MASTER_TOKEN por uma nova senha forte. Depois use aqui exatamente a mesma senha.</p></form></dialog>
+<dialog id="vini-live-modal" class="vini-live-modal" aria-label="Diário de execução dos agentes">
+<div class="vini-live-modal-head"><div><strong>◉ Diário de execução</strong><p>Eventos reais salvos na Cloudflare · D1</p></div><button id="vini-live-modal-close" type="button" aria-label="Fechar diário">×</button></div>
+<div id="vini-live-modal-filters" class="vini-live-filters" role="group" aria-label="Agente do diário"></div>
+<div id="vini-live-modal-events" class="vini-live-modal-events" role="log"></div>
+</dialog>
 </body></html>
