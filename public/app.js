@@ -256,6 +256,11 @@ async function sendChat(content,origin){
   renderAssistant(origin,result.reply,result.provider);
   if(result.execution&&result.execution.kind!=='conversation')appendExecutionReceipt(origin,result.execution);
   if(result.actionRequired&&/^vercel_/.test(result.actionRequired)&&!origin.querySelector('.vini-action-button'))addVercelAction(origin,result.actionRequired==='vercel_setup'?'Conectar Vercel agora':'Escolher projeto Vercel');
+  if(result.actionRequired==='new_project_chat'){
+   const btn=el('button','secondary','＋ Criar conversa de novo projeto');
+   btn.type='button';btn.addEventListener('click',()=>{void window.viniThreads?.createNewProject().catch(e=>notify(e.message));});
+   origin.append(btn);
+  }
   if(result.actionRequired==='work_status'){
    const actions=el('div','delegation-actions');
    const office=el('button','secondary','Ver diário real');
