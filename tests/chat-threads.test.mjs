@@ -18,7 +18,8 @@ function fakeDB({legacy=0,hasColumn=true,projectStatus='active'}={}){
     return null;},
    async run(){queries.push({sql,args,type:'run'});
     if(sql.startsWith('INSERT INTO chat_threads'))state.created=args;
-    if(sql.startsWith('UPDATE chat_threads SET status'))state.thread.status=args[0];
+    if(sql.startsWith("UPDATE chat_threads SET status='trashed'"))state.thread.status='trashed';
+    else if(sql.startsWith('UPDATE chat_threads SET status'))state.thread.status=args[0];
     if(sql.startsWith('UPDATE chat_threads SET title'))state.thread.title=args[0];
     return {success:true};}
   };
