@@ -14,11 +14,17 @@ export function searchTerms(input){
  const a=[...new Set((String(input||'').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]).filter(x=>x.length<36))];
  return a.slice(0,7).map(x=>String.fromCharCode(34)+x+String.fromCharCode(34)).join(' OR ');
 }
+export function cleanAnswer(input){
+ let result=String(input||'');
+ // Nemotron e outros modelos podem devolver blocos de raciocínio; eles não fazem parte da resposta ao usuário.
+ result=result.replace(/<think>[\\s\\S]*?<\\/think>/gi,'').replace(/<analysis>[\\s\\S]*?<\\/analysis>/gi,'');
+ return result.trim();
+}
 export function asText(result){
- if(typeof result?.response==='string')return result.response.trim();
- if(typeof result?.result==='string')return result.result.trim();
+ if(typeof result?.response==='string')return cleanAnswer(result.response);
+ if(typeof result?.result==='string')return cleanAnswer(result.result);
  const content=result?.choices?.[0]?.message?.content;
- return typeof content==='string'?content.trim():Array.isArray(content)?content.map(x=>x.text||'').join('\n').trim():'';
+ return cleanAnswer(typeof content==='string'?content:Array.isArray(content)?content.map(x=>x.text||'').join('\\n'):'');
 }
 export async function callAI(env,messages,choice='auto'){
  const engines=normalizeProvider(choice)==='auto'?['cloudflare','nvidia']:[normalizeProvider(choice)];
@@ -49,7 +55,7 @@ export async function callAI(env,messages,choice='auto'){
  throw Error('Nenhum modelo disponível. '+failures.join(' | '));
 }
 export function agentPrompt(a){
- return 'Você é '+a.name+', especialista em '+a.role+' no VINI MASTER AI. Responda em português. Entregue uma análise concreta, recomendações, riscos e próximos passos. Você não tem ferramentas de alteração de repositórios nem deploy. Nunca diga que realizou ações externas ou testes que não executou.';
+ return 'Você é '+a.name+', especialista em '+a.role+' no VINI MASTER AI. Escreva em português brasileiro natural, de forma clara e humana. Seja objetivo: descreva o que importa, as decisões concretas e o resultado desta análise. Use listas só se ajudarem. Não produza linguagem burocrática nem relatórios repetitivos. Você não possui ferramentas para editar repositórios nem publicar sistemas; nunca invente ações ou testes.';
 }
 
 export async function verifyProvider(env,provider,key){
