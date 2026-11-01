@@ -39,8 +39,8 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 .vr-office-floating .vr-mini-feed{font-size:10px;line-height:1.45;color:#b8d9e9;padding:5px 0;border-bottom:1px solid #164c6b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vr-office-visual-note{position:absolute;z-index:3;bottom:10px;left:12px;right:12px;display:flex;justify-content:center}
 .vr-office-visual-note span{font-size:10px;padding:5px 10px;border:1px solid #217ea3;background:#04162ecc;border-radius:50px;color:#a5d7eb}
-.vc-office-grid{display:grid!important;min-height:0!important;margin:14px 0!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
-.vc-office-center{display:none!important}
+.vc-office-grid{display:grid!important;min-height:0!important;margin:14px 0!important;grid-template-columns:minmax(0,1fr) minmax(155px,.75fr) minmax(0,1fr)!important;gap:10px!important;align-items:center}
+.vc-office-center{display:grid!important;min-width:0;min-height:170px;place-items:center;align-content:center;gap:5px}
 .vc-office-grid .vc-agent-col{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;align-content:start}
 .vc-agent-card{min-height:82px!important;border:1px solid #216b9c!important;box-shadow:0 0 15px #02365c52!important}
 .vc-agent-face{background:linear-gradient(145deg,#101c43,#0d3161)!important;color:transparent!important;font-size:0!important;background-image:url('/ref-robot.webp')!important;background-position:center!important;background-size:cover!important;border:1px solid var(--agent-color,#32d2ff)!important;box-shadow:0 0 13px color-mix(in srgb,var(--agent-color,#4ddfff) 55%,transparent)!important}
@@ -159,12 +159,12 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 @media(max-width:780px){.top:before{inset:0 18% 0 34%!important;opacity:.72!important}}
 
 /* Do not render the old empty office station view beneath the new illustrated office. */
-#section-office>.workspace>.office{display:none!important}
-#section-office>.workspace>.activity{min-width:0;max-width:none;width:100%;grid-column:1/-1}
-#section-office>.workspace{display:block!important}
+#section-office>.workspace>.office{display:block!important;min-width:0;overflow:hidden}
+#section-office>.workspace>.activity{min-width:0;width:auto;max-width:none;grid-column:auto}
+#section-office>.workspace{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(250px,.9fr)!important;gap:14px!important;align-items:start}
 .vr-office-scene[data-live=true]{border-color:#32f1c4;box-shadow:0 0 23px #16cfa543}
 .vr-office-scene[data-live=true] .vr-office-floating.left{border-color:#39eac3}
-@media(max-width:780px){#section-office>.workspace>.activity{margin:10px 0 0!important}}
+@media(max-width:780px){#section-office>.workspace{grid-template-columns:minmax(0,1fr)!important}#section-office>.workspace>.activity{margin:10px 0 0!important;width:100%!important}.vc-office-center{grid-row:1!important;min-height:120px!important}.vc-office-grid{grid-template-columns:minmax(0,1fr)!important}}
 
 /* True project images from the user's portfolio reference, not generic placeholders. */
 #section-projects #projects-list .portfolio-card[data-vr-kind="tour"]:before{background-image:url('/ref-thumb-tour.webp')!important}
@@ -172,3 +172,12 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 #section-projects #projects-list .portfolio-card[data-vr-kind="food"]:before{background-image:url('/ref-thumb-food.webp')!important}
 #section-projects #projects-list .portfolio-card[data-vr-kind="wifi"]:before{background-image:url('/ref-thumb-wifi.webp')!important}
 #section-projects #projects-list .portfolio-card[data-vr-kind]::before{background-position:center!important;background-size:cover!important;content:''!important}
+
+/* Visual regression R3: keep all six real stations, supervisor and timeline visible. */
+.vr-scene-details{margin:12px auto 2px;max-width:1350px;border:1px solid #2679aa;border-radius:14px;background:#03142a;overflow:hidden}
+.vr-scene-details>summary{padding:12px 15px;cursor:pointer;font-size:13px;font-weight:800;color:#c7efff;min-height:44px}
+.vr-scene-details .vr-office-scene{margin:0!important;border:0!important;border-radius:0!important;max-height:540px;min-height:240px!important}
+#section-office .station{visibility:visible!important;pointer-events:auto!important}
+#section-office .station:focus-visible{outline:3px solid #45ddff!important;outline-offset:3px}
+#section-office .vc-office-center{visibility:visible!important}
+@media(max-width:780px){.vr-scene-details .vr-office-scene{min-height:260px!important;max-height:370px}.vc-office-center{min-height:120px!important}.vc-office-grid .vc-agent-col{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
