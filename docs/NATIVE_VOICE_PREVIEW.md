@@ -60,3 +60,11 @@ O teste foi executado em Vercel Sandbox temporário com Node 24.22.1, agents 0.3
 - O caminho `/agents/vini-voice-agent/:threadId` deve permanecer protegido por autenticação no Worker antes do upgrade. O `run_worker_first` inclui `/agents/*`.
 
 **Próximo gate obrigatório**: executar uma implantação em Workers **preview** com binding D1 de QA, testar STT em pt-BR, TTS audível e interrupção no Android. Só depois pedir aprovação explícita para produção.
+
+## Provedor de voz brasileira opcional (não ativo na produção)
+
+A branch inclui adaptador `@cloudflare/voice-elevenlabs@0.2.0` com seleção estritamente autorizada. **Sem variáveis, permanece WorkersAITTS**. Quando `VINI_VOICE_PROVIDER=elevenlabs`, o Worker exige `ELEVENLABS_API_KEY` (Secret) e `VINI_ELEVENLABS_VOICE_ID` (identificador de 20 caracteres). Se qualquer item estiver ausente ou inválido, a classe falha explicitamente, sem tentar conexão ou gastar créditos externos. A chave **nunca** deve ser enviada ao navegador nem registrada em logs.
+
+Modelo: `eleven_flash_v2_5`; saída `mp3_44100_128`. O ID da voz é definido pela pessoa proprietária na biblioteca ElevenLabs. Teste em Vercel Sandbox efêmero: pacote oficial instalado, bundle compilado com esbuild, e instância `ElevenLabsTTS` construída com chave fictícia; métodos `synthesize` e `synthesizeStream` identificados (**PASS**). Nenhuma requisição de síntese real, cobrança ou validação de voz brasileira foi executada.
+
+**Antes de ativar ElevenLabs:** estabelecer orçamento por período, limite de caracteres e aprovação explícita de uso do provedor; testar voz PT-BR no aparelho. O fallback nativo Aura da Cloudflare não é certificado como brasileiro.
