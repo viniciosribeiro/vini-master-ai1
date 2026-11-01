@@ -38,6 +38,13 @@ function renderOfficeLive(){
   else if(run?.status==='failed'&&realRecent(mission?.updated_at||mission?.created_at,5))expression='error';
   else if(run?.status==='done'&&realRecent(mission?.updated_at||mission?.created_at,3))expression='success';
   else if(run?.status==='queued'&&runningMission)expression='waiting';
+  else{
+   const event=events.find(e=>e.agent_id===id&&realRecent(e.created_at,2));
+   if(event&&/deploy/i.test(event.description||'')){
+    if(/indispon[ií]vel|falha|erro|404/i.test(event.description))expression='error';
+    else if(/http verificado|respondeu/i.test(event.description))expression='success';
+   }
+  }
   station.dataset.expression=expression;
   const label=station.querySelector('.state');
   if(label)label.textContent=active?'● Trabalhando agora':expression==='success'?'● Concluiu uma etapa':expression==='error'?'● Erro registrado':expression==='waiting'?'● Aguardando tarefa':'● Disponível';
