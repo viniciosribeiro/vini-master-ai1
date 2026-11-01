@@ -67,3 +67,9 @@ test('settings contain opt-in authenticated D1 CRUD smoke and cleanup',()=>{
  assert.match(script,/button\.disabled=false/);
  assert.doesNotMatch(script,/MASTER_TOKEN|Authorization:.*Bearer|fetch\('https:\/\/api\.github/);
 });
+
+test('persistent HttpOnly sessions keep live state polling without a JavaScript token',()=>{
+ assert.match(app,/if\(!authValidated\|\|document\.hidden\|\|navigator\.onLine===false\)return/);
+ assert.doesNotMatch(app,/if\(!token\|\|!authValidated\|\|document\.hidden/);
+ assert.match(script,/x\.dataset\.section==='missions'&&typeof loadProjects/);
+});
