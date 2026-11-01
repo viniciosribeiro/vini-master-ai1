@@ -107,11 +107,12 @@ function closeDrawer(){drawer=false;document.body.classList.remove('chat-threads
 function openProjectPicker(mode='new',thread=null){
  dialogMode=mode;dialogTarget=thread;$('chat-thread-dialog-title').textContent=mode==='move'?'Mover conversa para outro projeto':'Nova conversa';
  $('chat-thread-dialog-hint').textContent=mode==='move'?'Selecione o projeto que receberá esta conversa e seu contexto.':'Selecione o projeto para manter o histórico organizado, ou crie um novo projeto.';
- fillSelect('chat-thread-project-picker',mode==='move'?thread.project_id||'':'',mode==='new');
+ fillSelect('chat-thread-project-picker',mode==='move'?thread.project_id||'':current()?.project_id||projects.find(p=>p.status==='active')?.id||'__new_project__',mode==='new');
  $('chat-thread-dialog-confirm').textContent=mode==='move'?'Mover conversa':'Criar conversa';
  $('chat-thread-dialog').showModal();
 }
 async function createNew({projectId=null,draft=false,title='Nova conversa'}={}){
+ if(typeof chatSending!=='undefined'&&chatSending)throw Error('Termine o envio atual antes de abrir outra conversa.');
  const data=await api('/threads',{method:'POST',body:{projectId,draft,title}});
  filter='active';query='';projectFilter='';$('chat-thread-search').value='';
  document.querySelectorAll('[data-chat-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.chatFilter==='active')));
@@ -138,6 +139,7 @@ $('chat-thread-dialog-cancel')?.addEventListener('click',()=>$('chat-thread-dial
 $('chat-thread-dialog-confirm')?.addEventListener('click',async()=>{
  const value=$('chat-thread-project-picker').value;
  if(!value){report(new Error('Escolha um projeto.'));return;}
+ if(dialogMode==='move'&&value==='__new_project__'){report(new Error('Selecione um projeto existente.'));return;}
  $('chat-thread-dialog').close();
  try{
   if(dialogMode==='move'&&dialogTarget){
