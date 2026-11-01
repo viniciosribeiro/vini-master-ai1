@@ -2,18 +2,19 @@ const $=id=>document.getElementById(id);
 const AGENT_NAMES={supervisor:'Supervisor',programador:'Programador',designer:'Designer',qa:'QA / Testes',infra:'Infraestrutura',pesquisa:'Pesquisa'};
 const storageKey='vini_master_token';
 let token=sessionStorage.getItem(storageKey)||'';
+let authValidated=false;
 let state={missions:[],runs:[],activity:[],memories:[],agents:[],provider:'auto',counts:{}};
 let missionSelection='';
 const escapeTime=x=>{try{return new Date(x).toLocaleString('pt-BR')}catch{return String(x||'')}};
 function notify(msg){const el=$('notification');el.textContent=msg;el.hidden=!msg;clearTimeout(window.noticeTimeout);if(msg)window.noticeTimeout=setTimeout(()=>el.hidden=true,9000);}
 async function api(path,options={}){
- if(!token)throw Error('Configure sua chave de acesso no ícone 🔐.');
+ if(!token||!authValidated)throw Error('Entre com o MASTER_TOKEN do painel usando o cadeado 🔐. Não use a chave NVIDIA.');
  const headers={Authorization:'Bearer '+token,...options.headers};
  if(options.body&&typeof options.body!=='string')options.body=JSON.stringify(options.body);
  if(options.body)headers['Content-Type']='application/json';
  const res=await fetch('/api'+path,{...options,headers,cache:'no-store'});
  let data={};try{data=await res.json()}catch{}
- if(!res.ok){if(res.status===401){$('system-status').textContent='● Acesso negado';$('system-status').classList.remove('connected');}throw Error(data.error||'Falha HTTP '+res.status);}
+ if(!res.ok){if(res.status===401){clearInvalidSession();openAccess(data.error||'A sessão expirou ou a chave do painel mudou.');}throw Error(data.error||'Falha HTTP '+res.status);}
  return data;
 }
 function show(section){
@@ -24,7 +25,7 @@ function show(section){
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section)));
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text);return node;}
 function updateStatus(){
- const live=!!token;
+ const live=!!token&&authValidated;
  $('system-status').textContent=live?'● Conectado':'● Sem conexão';
  $('system-status').classList.toggle('connected',live);
  $('metric-agents').textContent=state.agents.length||6;
@@ -97,7 +98,7 @@ function renderMemories(){
  }
 }
 async function refresh(){
- if(!token)return;
+ if(!token||!authValidated)return;
  try{
   state=await api('/state');
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
@@ -105,7 +106,7 @@ async function refresh(){
  }catch(e){notify(e.message);}
 }
 async function loadChat(){
- if(!token)return;
+ if(!token||!authValidated)return;
  try{
   const data=await api('/conversation?limit=80');
   const box=$('messages');box.replaceChildren();
@@ -133,15 +134,39 @@ $('mission-form').addEventListener('submit',async e=>{
 $('memory-form').addEventListener('submit',async e=>{e.preventDefault();const input=$('memory-text');try{await api('/memory',{method:'POST',body:{content:input.value}});input.value='';await refresh();notify('Memória salva no banco D1.');}catch(err){notify(err.message)}});
 $('search-form').addEventListener('submit',async e=>{e.preventDefault();const box=$('search-results');box.replaceChildren();try{const data=await api('/search?q='+encodeURIComponent($('search-query').value));if(!data.results?.length)box.append(el('p','empty','Nenhum trecho encontrado.'));for(const m of data.results||[])box.append(el('div','search-card',m.content));}catch(err){notify(err.message);}});
 $('provider-select').addEventListener('change',async e=>{const provider=e.target.value;try{await api('/settings',{method:'POST',body:{provider}});state.provider=provider;updateStatus();notify('Modelo ajustado.');}catch(err){notify(err.message);}});
-function openAccess(){$('access-token').value='';$('access-dialog').showModal();}
+function openAccess(reason=''){$('access-token').value='';const error=$('access-error');error.textContent=reason;error.hidden=!reason;if(!$('access-dialog').open)$('access-dialog').showModal();}
+function clearInvalidSession(){token='';authValidated=false;sessionStorage.removeItem(storageKey);updateStatus();}
+async function verifyAccess(candidate){
+ const response=await fetch('/api/auth/session',{headers:{Authorization:'Bearer '+candidate},cache:'no-store'});
+ let result={};try{result=await response.json();}catch{}
+ if(!response.ok||!result.authenticated)throw Error(result.error||'Acesso não autorizado. Confira o MASTER_TOKEN da Cloudflare.');
+ return result;
+}
 $('open-access').addEventListener('click',openAccess);$('settings-access').addEventListener('click',openAccess);
 $('access-cancel').addEventListener('click',()=>$('access-dialog').close());
-$('access-form').addEventListener('submit',async e=>{e.preventDefault();token=$('access-token').value.trim();sessionStorage.setItem(storageKey,token);$('access-dialog').close();updateStatus();await refresh();await loadChat();});
+$('access-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const value=$('access-token').value.trim(),button=$('access-submit'),error=$('access-error');
+ button.disabled=true;button.textContent='Conferindo...';error.hidden=true;
+ try{
+  await verifyAccess(value);
+  token=value;authValidated=true;
+  sessionStorage.setItem(storageKey,token);
+  $('access-dialog').close();
+  updateStatus();notify('Acesso validado. Painel conectado com segurança.');
+  await refresh();await loadChat();
+ }catch(err){
+  clearInvalidSession();
+  error.textContent=err.message+' Se você acabou de alterar o segredo, confirme que foi salvo em Produção e use exatamente o mesmo valor aqui.';
+  error.hidden=false;
+  $('access-token').focus();
+ }finally{button.disabled=false;button.textContent='Verificar e entrar';}
+});
 $('export-data').addEventListener('click',async()=>{try{const data=await api('/export');const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vini-master-memoria.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}catch(e){notify(e.message);}});
 $('erase-chat').addEventListener('click',async()=>{if(!confirm('Apagar TODAS as mensagens? Memórias fixadas permanecem.'))return;try{await api('/conversation',{method:'DELETE',body:{confirm:'APAGAR'}});await loadChat();await refresh();notify('Histórico apagado.');}catch(e){notify(e.message);}});
 function providerFeedback(message){const node=$('provider-feedback');if(node)node.textContent=message;notify(message);}
 async function probe(provider,button){
- if(!token){show('settings');openAccess();return;}
+ if(!token||!authValidated){show('settings');openAccess();return;}
  button.disabled=true;providerFeedback('Testando '+(provider==='cloudflare'?'Cloudflare AI':'NVIDIA')+' com uma chamada real...');
  try{const result=await api('/providers/test',{method:'POST',body:{provider}});
   providerFeedback('Conexão confirmada: '+result.provider+' · '+result.model+' · Resposta: '+result.reply);
@@ -152,7 +177,7 @@ $('open-provider-connect').addEventListener('click',()=>{show('settings');$('nvi
 $('test-cf').addEventListener('click',e=>probe('cloudflare',e.currentTarget));
 $('test-nvidia').addEventListener('click',e=>probe('nvidia',e.currentTarget));
 $('nvidia-connect-form').addEventListener('submit',async e=>{
- e.preventDefault();if(!token){openAccess();return;}
+ e.preventDefault();if(!token||!authValidated){openAccess();return;}
  const input=$('nvidia-api-key'),button=$('connect-nvidia'),key=input.value.trim();
  if(!key)return;
  button.disabled=true;providerFeedback('Conferindo a chave com a NVIDIA...');
@@ -170,6 +195,21 @@ $('disconnect-nvidia').addEventListener('click',async e=>{
   await refresh();providerFeedback(result.externalSecret?'Chave do painel removida; ainda existe NVIDIA_API_KEY nos secrets do Worker.':'NVIDIA desconectada.');
  }catch(err){providerFeedback(err.message);}finally{button.disabled=false;}
 });
-updateStatus();if(token){refresh();loadChat()}else{notify('Clique no cadeado para entrar. Se for a primeira vez, configure MASTER_TOKEN nos Secrets do Worker na Cloudflare.');}
-fetch('/api/health',{cache:'no-store'}).then(r=>r.json()).then(h=>{if(!h.accessConfigured){notify('Falta configurar MASTER_TOKEN no Worker Cloudflare. A IA já está vinculada, mas o chat precisa dessa chave privada.');}}).catch(()=>{});
-setInterval(()=>{if(token)refresh()},10000);
+updateStatus();
+async function initializeAccess(){
+ try{
+  const res=await fetch('/api/health',{cache:'no-store'});const health=await res.json();
+  if(!health.accessConfigured){clearInvalidSession();notify('Configure MASTER_TOKEN nos Secrets de Produção do Worker vini-master-ai1.');return;}
+ }catch{notify('Não foi possível consultar o diagnóstico do Worker.');}
+ if(!token){openAccess();return;}
+ try{
+  await verifyAccess(token);
+  authValidated=true;updateStatus();
+  await refresh();await loadChat();
+ }catch(err){
+  clearInvalidSession();
+  openAccess('A sessão antiga não foi aceita. Digite novamente o MASTER_TOKEN do painel. '+err.message);
+ }
+}
+initializeAccess();
+setInterval(()=>{if(token&&authValidated)refresh()},10000);
