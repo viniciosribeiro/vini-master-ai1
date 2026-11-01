@@ -26,23 +26,69 @@ function show(section){
 }
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section)));
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text);return node;}
+const UNVERIFIED_HOSTS=/(?:^|\.)((?:vercel\.app|workers\.dev|pages\.dev|netlify\.app|onrender\.com|fly\.dev|firebaseapp\.com|web\.app))$/i;
+const PUBLICATION_CLAIM=/(?:acabei de (?:fazer|subir)|fiz o deploy|publiquei|deploy (?:feito|conclu[ií]do)|(?:site|projeto|app) (?:est[aá]|ficou) (?:no ar|online|publicad[oa]))/iu;
+let verifiedDeploymentLinks=new Map(),lastVerifiedLinksRead=0;
+async function refreshVerifiedDeploymentLinks(){
+ if(Date.now()-lastVerifiedLinksRead<60000||!token||!authValidated)return;
+ lastVerifiedLinksRead=Date.now();
+ try{
+  const result=await api('/projects');
+  const map=new Map();
+  for(const project of result.projects||[]){
+   for(const prefix of ['deploy','preview']){
+    const url=project[prefix+'_url'],status=project[prefix+'_status'],checked=project[prefix+'_verified_at'];
+    if(status==='online'&&checked&&typeof url==='string'){
+     try{map.set(new URL(url).href.replace(/\/$/,''),{name:project.name,kind:prefix});}catch{}
+    }
+   }
+  }
+  verifiedDeploymentLinks=map;
+ }catch{lastVerifiedLinksRead=0;}
+}
+function cleanOldHtml(content){
+ return String(content||'').replace(/<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,(_,link,label)=>String(label).replace(/<[^>]+>/g,'')+' ('+link+')').replace(/<br\s*\/?>/gi,'\n').replace(/<\/?(?:p|div|strong|em|span)[^>]*>/gi,'');
+}
 function renderAssistant(container,content,provider){
  container.replaceChildren();
- const body=el('div','reply-body');
- const value=String(content||'').replace(/\r\n/g,'\n').trim();
- const chunks=value.split(/\n{2,}/);
- for(const chunk of chunks){
-  const trimmed=chunk.trim();if(!trimmed)continue;
-  const clean=trimmed.replace(/^#{1,4}\s+/gm,'').replace(/\*\*(.*?)\*\*/g,'$1');
-  body.append(el('p','reply-paragraph',clean));
+ let value=cleanOldHtml(content).replace(/\r\n/g,'\n').trim();
+ const hits=Array.from(value.matchAll(/https?:\/\/[^\s<>"'()[\]{}]+/gi));
+ const verifiedUrls=[],unconfirmedUrls=[];
+ for(const match of hits){
+  const raw=match[0].replace(/[.,;!?]+$/,'');
+  let parsed;try{parsed=new URL(raw);}catch{continue;}
+  if(!UNVERIFIED_HOSTS.test(parsed.hostname))continue;
+  const info=verifiedDeploymentLinks.get(parsed.href.replace(/\/$/,''));
+  if(info)verifiedUrls.push({url:parsed.href,...info});
+  else unconfirmedUrls.push(raw);
  }
- if(!body.childNodes.length)body.append(el('p','reply-paragraph',value||'Sem resposta.'));
+ const oldClaim=PUBLICATION_CLAIM.test(value);
+ if(unconfirmedUrls.length){
+  for(const link of new Set(unconfirmedUrls))value=value.replaceAll(link,'[link de publicação ainda não verificado]');
+ }
+ if(oldClaim&&unconfirmedUrls.length){
+  value='Esta resposta antiga anunciou um deploy sem comprovação. O endereço mencionado não foi validado. Veja Projetos → Sites publicados para conferir se existe uma publicação real.';
+ }
+ const body=el('div','reply-body');
+ const chunks=value.split(/\n{2,}/).filter(Boolean);
+ for(const chunk of chunks){
+  const clean=chunk.trim().replace(/^#{1,4}\s+/gm,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/^\s*[-*]\s+/gm,'• ');
+  if(clean)body.append(el('p','reply-paragraph',clean));
+ }
+ if(!body.childNodes.length)body.append(el('p','reply-paragraph','Sem resposta.'));
  container.append(body);
+ if(unconfirmedUrls.length)container.append(el('p','deploy-chat-warning','Link de deploy não confirmado. A equipe só deve anunciar publicação após a verificação HTTP.'));
+ for(const entry of verifiedUrls){
+  const link=document.createElement('a');link.href=entry.url;link.target='_blank';link.rel='noopener noreferrer';
+  link.className='deploy-chat-verified';link.textContent='✓ Abrir '+entry.name+' (HTTP verificado) ↗';
+  container.append(link);
+ }
  if(provider){
   const names={nvidia:'NVIDIA',cloudflare:'Cloudflare AI'};
   container.append(el('span','reply-provider','Respondido por '+(names[provider]||provider)));
  }
 }
+
 function updateStatus(){
  const live=!!token&&authValidated;
  $('system-status').textContent=live?'● Conectado':'● Sem conexão';
@@ -129,6 +175,7 @@ async function refresh(){
 async function loadChat(){
  if(!token||!authValidated)return;
  try{
+  await refreshVerifiedDeploymentLinks();
   const data=await api('/conversation?limit=80');
   const box=$('messages');box.replaceChildren();
   for(const m of data.messages||[]){
@@ -145,11 +192,13 @@ let chatSending=false;
 async function sendChat(content,origin){
  if(!content.trim()||chatSending)return;
  chatSending=true;
+ if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('thinking');
  origin.replaceChildren(el('span','reply-loading','Estou pensando na melhor resposta...'));
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
   if(typeof window.jarvisSpeakReply==='function')window.jarvisSpeakReply(result.reply);
+  else if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   if(result.intake){const startBtn=document.getElementById('intake-start-now');if(startBtn)startBtn.hidden=result.intake.status!=='collecting';}
   if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
 
@@ -158,7 +207,7 @@ async function sendChat(content,origin){
  }catch(e){
   origin.replaceChildren(el('p','reply-error','Não consegui responder agora: '+e.message));
   notify(e.message);
- }finally{chatSending=false;}
+ }finally{chatSending=false;if(typeof window.jarvisSetMood==='function'&&!window.jarvisVoiceSpeaking)window.jarvisSetMood('idle');}
 }
 function startNewProjectInterview(){
  show('chat');
