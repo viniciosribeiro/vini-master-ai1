@@ -24,6 +24,23 @@ function show(section){
 }
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section)));
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text);return node;}
+function renderAssistant(container,content,provider){
+ container.replaceChildren();
+ const body=el('div','reply-body');
+ const value=String(content||'').replace(/\r\n/g,'\n').trim();
+ const chunks=value.split(/\n{2,}/).slice(0,35);
+ for(const chunk of chunks){
+  const trimmed=chunk.trim();if(!trimmed)continue;
+  const clean=trimmed.replace(/^#{1,4}\s+/gm,'').replace(/\*\*(.*?)\*\*/g,'$1');
+  body.append(el('p','reply-paragraph',clean));
+ }
+ if(!body.childNodes.length)body.append(el('p','reply-paragraph',value||'Sem resposta.'));
+ container.append(body);
+ if(provider){
+  const names={nvidia:'NVIDIA',cloudflare:'Cloudflare AI'};
+  container.append(el('span','reply-provider','Respondido por '+(names[provider]||provider)));
+ }
+}
 function updateStatus(){
  const live=!!token&&authValidated;
  $('system-status').textContent=live?'● Conectado':'● Sem conexão';
@@ -110,19 +127,29 @@ async function loadChat(){
  try{
   const data=await api('/conversation?limit=80');
   const box=$('messages');box.replaceChildren();
-  for(const m of data.messages||[])box.append(el('div','message '+m.role,m.content));
+  for(const m of data.messages||[]){
+   const bubble=el('div','message '+m.role);
+   if(m.role==='assistant')renderAssistant(bubble,m.content,m.provider);
+   else bubble.textContent=m.content;
+   box.append(bubble);
+  }
   box.scrollTop=box.scrollHeight;
  }catch(e){notify(e.message);}
 }
+let chatSending=false;
 async function sendChat(content,origin){
- if(!content.trim())return;
- const busy=el('span','','Consultando a inteligência artificial...');
- origin.textContent='';origin.append(busy);
+ if(!content.trim()||chatSending)return;
+ chatSending=true;
+ origin.replaceChildren(el('span','reply-loading','Estou pensando na melhor resposta...'));
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
-  origin.textContent=result.reply+'\n\nModelo: '+result.provider+(result.memorySaved?' · Memória fixada':'');
-  await refresh();if(!$('section-chat').hidden)await loadChat();
- }catch(e){origin.textContent='Erro: '+e.message;notify(e.message);}
+  renderAssistant(origin,result.reply,result.provider);
+  await refresh();
+  if(!$('section-chat').hidden)await loadChat();
+ }catch(e){
+  origin.replaceChildren(el('p','reply-error','Não consegui responder agora: '+e.message));
+  notify(e.message);
+ }finally{chatSending=false;}
 }
 $('quick-chat').addEventListener('submit',e=>{e.preventDefault();const input=$('quick-message');const value=input.value.trim();if(!value)return;input.value='';sendChat(value,$('quick-response'));});
 $('chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('chat-message'),value=input.value.trim();if(!value)return;input.value='';const box=$('messages');box.append(el('div','message user',value));const target=el('div','message assistant','');box.append(target);sendChat(value,target);box.scrollTop=box.scrollHeight;});
