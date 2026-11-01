@@ -1,0 +1,42 @@
+name: VINI — testes de conversas e smoke Cloudflare
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vini-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Executar testes existentes
+        run: npm test
+      - name: Verificar Worker, D1 e proteção do histórico em produção
+        run: node scripts/smoke-production.mjs
+
+  authenticated-d1-smoke:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Criar, renomear, mover, arquivar, restaurar e excluir conversa de teste
+        run: node scripts/smoke-production.mjs
+        env:
+          VINI_MASTER_TOKEN: ${{ secrets.VINI_MASTER_TOKEN }}
