@@ -29,7 +29,7 @@ test('voice studio no longer synthesizes robotic Android device voices',()=>{
  assert.match(script,/new Audio\(url\)/);
  assert.match(script,/api\('\/voice\/tts'/);
  assert.match(script,/OpenAI TTS-1/);
- assert.match(script,/Não/);
+ assert.match(script,/Sem voz robotizada|Voz OpenAI indisponível/);
 });
 test('natural speech is behind authenticated API and same-origin guard',()=>{
  assert.match(api,/handleNaturalVoice\(req,env,env\.DB\)/);
