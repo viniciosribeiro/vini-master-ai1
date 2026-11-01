@@ -1,3 +1,16 @@
+# VINI MASTER AI 0.13.0 — Conversas organizadas como ChatGPT por projeto
+
+- Cada conversa nova tem um identificador D1 e pertence a um projeto ativo. O chat carrega apenas mensagens da conversa escolhida e trechos relevantes de outras conversas **do mesmo projeto**; não mistura mensagens de projetos diferentes em contexto da IA.
+- Nova sidebar de conversas, com busca por título ou conteúdo, agrupamento por projeto e filtro de projeto, estados Ativas / Arquivadas / Lixeira. Celular usa gaveta lateral; desktop usa painel permanente ao lado do chat.
+- Criar conversa no projeto, renomear título, mover conversa completa entre projetos, arquivar, restaurar, enviar à lixeira e exclusão definitiva em duas etapas. Projetos possuem atalho de nova conversa.
+- Histórico antigo preservado em "Histórico anterior (organize por projeto)" e sem atribuição arbitrária; pode ser movido para o projeto correto. Nenhum histórico foi apagado no upgrade.
+- Entrevistas para criar um novo projeto usam uma conversa isolada e, ao finalizar, vinculam a conversa ao projeto recém-criado. Pedidos de novo projeto dentro de outro chat solicitam conversa separada.
+- Rota autenticada GET/POST /api/threads; GET/PATCH/DELETE /api/threads/:id; GET /api/threads/:id/messages. As mensagens são vinculadas por thread_id, migração é idempotente e a busca de contexto por FTS é limitada ao projeto.
+- Exclusão pela lixeira apaga definitivamente apenas quando confirmada; renomear ou mover conversa não altera repositórios ou plataformas externas.
+- Testes em tests/chat-threads.test.mjs validam migração, separação das mensagens, edição, arquivo e lixeira.
+
+Limite: as conversas antigas não tinham metadados de projeto. Elas são preservadas em uma área não classificada até o usuário decidir onde colocá-las. Ainda é necessário testar o caminho de autenticação e escrita no D1 de produção com o proprietário para comprovar o fluxo end-to-end.
+
 # VINI MASTER AI 0.12.0 — Conversa contextual e estado real dos agentes
 
 - Corrigida a regressão em que o filtro de promessas substituía indiscriminadamente mensagens pela resposta "Não executei esse build / Conecte Vercel", mesmo quando o usuário reclamava dos agentes parados. O filtro agora bloqueia somente alegações de execução externa sem comprovante e preserva as partes úteis da resposta, sem citar plataformas não solicitadas.
