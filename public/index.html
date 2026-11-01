@@ -2,8 +2,8 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition 0.13.0</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=31"><link rel="stylesheet" href="/jarvis.css?v=31"><link rel="stylesheet" href="/chat-threads.css?v=31">
-<script src="/app.js?v=31" defer></script><script src="/chat-threads.js?v=31" defer></script><script src="/projects.js?v=31" defer></script><script src="/pwa.js?v=31" defer></script><script src="/office-live.js?v=31" defer></script><script src="/jarvis.js?v=31" defer></script><script src="/live-monitor.js?v=31" defer></script><script src="/evidence.js?v=31" defer></script><script src="/vercel-console.js?v=31" defer></script></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=31"><link rel="stylesheet" href="/jarvis.css?v=31"><link rel="stylesheet" href="/chat-threads.css?v=31"><link rel="stylesheet" href="/model-picker.css?v=32">
+<script src="/app.js?v=31" defer></script><script src="/chat-threads.js?v=31" defer></script><script src="/model-picker.js?v=32" defer></script><script src="/projects.js?v=31" defer></script><script src="/pwa.js?v=31" defer></script><script src="/office-live.js?v=31" defer></script><script src="/jarvis.js?v=31" defer></script><script src="/live-monitor.js?v=31" defer></script><script src="/evidence.js?v=31" defer></script><script src="/vercel-console.js?v=31" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -117,7 +117,25 @@
 <button class="primary" type="submit">Salvar meu perfil</button></form>
 <div class="work-profile-actions"><button class="secondary" type="button" id="profile-analyze">Aprender com as conversas</button><button class="danger" type="button" id="profile-delete">Apagar perfil</button></div><p id="work-profile-feedback" role="status"></p></section><p>Salve fatos que o agente deverá considerar em conversas futuras. As mensagens também ficam no histórico pesquisável.</p><form id="memory-form" class="inline-form"><input id="memory-text" maxlength="1200" placeholder="Lembre que meu projeto principal é..." required><button class="primary" type="submit">Guardar</button></form><h2>Memórias fixadas</h2><div id="memory-list"></div><h2>Pesquisar conversas antigas</h2><form id="search-form" class="inline-form"><input id="search-query" placeholder="Palavra ou assunto"><button type="submit" class="secondary">Buscar</button></form><div id="search-results"></div></div></section>
 <section id="section-settings" class="view" hidden><div class="panel padded"><h1>Configurações e privacidade</h1><p>Chave de acesso somente nesta sessão. A memória está no D1 da sua conta Cloudflare.</p><div class="provider-console"><h2>Inteligências artificiais</h2><p class="muted">Teste os modelos e conecte a NVIDIA sem copiar a chave para o GitHub. A Cloudflare AI usa o binding automático.</p>
-<div class="provider-row"><div><strong>Cloudflare Workers AI</strong><small id="cf-provider-state">Verificando...</small></div><button class="secondary" type="button" id="test-cf">Testar IA</button></div>
+<div class="provider-row"><div><strong>Cloudflare Workers AI</strong><small id="cf-provider-state">Verificando...</small></div><button class="secondary" type="button" id="test-cf">Testar IA</button></div><section class="vini-model-picker" id="vini-model-picker">
+ <div class="vini-model-picker-heading"><strong>Escolher modelo de inteligência</strong><p>Você decide qual modelo usar. O VINI testa a escolha antes de salvá-la no Cloudflare D1.</p></div>
+ <label for="cf-model-options">Modelos Cloudflare Workers AI</label>
+ <select id="cf-model-options"><option value="">Carregando modelos…</option></select>
+ <label for="cf-custom-model">ID do modelo Cloudflare (editável)</label>
+ <input id="cf-custom-model" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="@cf/fabricante/modelo">
+ <div id="cf-model-pricing" class="vini-model-pricing">Uso sujeito à cota gratuita e aos requisitos do modelo.</div>
+ <label class="vini-model-paid-ack" id="cf-paid-ack-wrap" hidden><input type="checkbox" id="cf-paid-ack"> Entendo que este modelo pode exigir plano pago ou créditos.</label>
+ <button type="button" id="cf-model-save" class="primary">Testar e usar este modelo</button>
+ <p class="vini-model-feedback" id="cf-model-feedback" role="status">Modelo atual: verificando…</p>
+ <div class="vini-model-nvidia">
+  <label for="nv-custom-model">Modelo NVIDIA API (opcional)</label>
+  <input id="nv-custom-model" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="fabricante/modelo">
+  <button type="button" id="nv-model-save" class="secondary">Testar e usar NVIDIA</button>
+  <p class="vini-model-feedback" id="nv-model-feedback" role="status">Modelo NVIDIA ainda não consultado.</p>
+ </div>
+ <p class="vini-model-explanation">A seleção passa a valer para as próximas respostas do VINI e dos especialistas. Alguns modelos podem consumir mais da cota ou exigir faturamento; o teste precisa passar antes da ativação.</p>
+ <a href="https://developers.cloudflare.com/workers-ai/models/" target="_blank" rel="noopener noreferrer">Ver catálogo completo da Cloudflare ↗</a>
+</section>
 <form id="nvidia-connect-form" class="nvidia-connect-form" autocomplete="off"><label for="nvidia-api-key"><strong>NVIDIA API</strong><small id="nv-provider-state">Não conectada</small></label>
 <input id="nvidia-api-key" type="password" spellcheck="false" autocomplete="new-password" minlength="20" maxlength="512" placeholder="Cole sua chave NVIDIA aqui" required>
 <button class="primary" type="submit" id="connect-nvidia">Validar e conectar NVIDIA</button></form>
