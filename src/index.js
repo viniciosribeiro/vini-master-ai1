@@ -1,8 +1,13 @@
 import {proactiveReview} from './proactive.js';
+import {generateProfile} from './learning.js';
+import {ensureSchema} from './bootstrap.js';
 import {handleAPI} from './api.js';
 export {MissionWorkflow} from './workflow.js';
 export default {
- async scheduled(controller,env,ctx){ctx.waitUntil(proactiveReview(env));},
+ async scheduled(controller,env,ctx){
+  if(controller.cron==='0 11 * * 1')ctx.waitUntil((async()=>{await ensureSchema(env.DB);try{await generateProfile(env);}catch(e){console.log('profile refresh skipped:',String(e.message||e).slice(0,90));}})());
+  else ctx.waitUntil(proactiveReview(env));
+ },
  async fetch(request,env){
   const path=new URL(request.url).pathname;
   if(path==='/api/health'&&request.method==='GET')return Response.json({status:env.AI?.run&&env.DB&&env.MASTER_TOKEN?.length>=24?'ready':'configuration_required',bindings:{cloudflareAI:!!env.AI?.run,d1:!!env.DB},accessConfigured:!!(env.MASTER_TOKEN&&env.MASTER_TOKEN.length>=24)}, {headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
