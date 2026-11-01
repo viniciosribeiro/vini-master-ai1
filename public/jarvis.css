@@ -373,3 +373,17 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
  #section-chat .reply-provider{font-size:11px!important}
  #section-chat .messages{overscroll-behavior:contain!important;scrollbar-width:thin}
 }
+
+/* Real delegated tasks: compact progress chip and action from any conversation. */
+.jarvis-task-banner{display:flex;align-items:center;gap:9px;justify-content:space-between;flex:0 0 auto;background:linear-gradient(95deg,#0d344f,#122e4c);border:1px solid #2e9dc2;border-radius:13px;padding:9px 11px;margin:5px 0;font-size:12px;color:#b8efff;box-shadow:0 5px 15px #071b3444}
+.jarvis-task-banner[hidden]{display:none!important}
+#jarvis-task-text{flex:1;min-width:0;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#jarvis-task-open{flex:0 0 auto;border:1px solid #3ecfee;background:#135b83;border-radius:11px;color:#edffff;font-weight:750;min-height:39px;padding:7px 10px;font-size:11px}
+.delegation-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:9px}
+.delegation-actions button{font-size:12px!important;min-height:40px;border-radius:12px!important;padding:8px 11px!important;white-space:normal}
+#section-office .station[data-expression=waiting] .rb-antenna:before{animation:robotWaiting 1.6s ease-in-out infinite}
+@media(max-width:780px){
+ .jarvis-task-banner{padding:7px 9px;margin:4px 0;gap:6px;font-size:11px}
+ #jarvis-task-open{font-size:10px;padding:7px 8px;max-width:92px}
+ .delegation-actions button{min-height:40px;flex:1}
+}
