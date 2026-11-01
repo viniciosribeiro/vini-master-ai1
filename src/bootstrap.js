@@ -1,3 +1,4 @@
+import {setupDeployments} from './deployments.js';
 import {initializeProjects} from './project-manager.js';
 const SQL = [
 "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT,role TEXT NOT NULL CHECK(role IN ('user','assistant')),content TEXT NOT NULL,provider TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)",
@@ -18,10 +19,12 @@ let schemaReady=false;
 export async function ensureSchema(db){
  if(schemaReady)return;
  try {await db.prepare('SELECT key FROM settings LIMIT 1').first(); await db.prepare("CREATE TABLE IF NOT EXISTS provider_credentials (name TEXT PRIMARY KEY,salt TEXT NOT NULL,iv TEXT NOT NULL,ciphertext TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run(); await initializeProjects(db);
+ await setupDeployments(db);
  await db.prepare("CREATE TABLE IF NOT EXISTS work_profile (id INTEGER PRIMARY KEY CHECK(id=1),content TEXT NOT NULL DEFAULT '',updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run(); await db.prepare("CREATE TABLE IF NOT EXISTS code_jobs (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,request TEXT NOT NULL,provider TEXT NOT NULL DEFAULT 'auto',status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',result TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run(); schemaReady=true; return;}
  catch(err){if(!/no such table|does not exist/i.test(String(err.message||err)))throw err;}
  for(const statement of SQL)await db.prepare(statement).run();
  await initializeProjects(db);
+ await setupDeployments(db);
  await db.prepare("CREATE TABLE IF NOT EXISTS work_profile (id INTEGER PRIMARY KEY CHECK(id=1),content TEXT NOT NULL DEFAULT '',updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS code_jobs (id TEXT PRIMARY KEY,project_id TEXT NOT NULL,request TEXT NOT NULL,provider TEXT NOT NULL DEFAULT 'auto',status TEXT NOT NULL DEFAULT 'queued',detail TEXT NOT NULL DEFAULT '',result TEXT NOT NULL DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
  schemaReady=true;
