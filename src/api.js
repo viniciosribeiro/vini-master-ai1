@@ -68,7 +68,7 @@ export async function handleAPI(req,env){
   if(path==='/api/evidence'&&method==='GET')return respond({items:await readExecutionLedger(env.DB),generatedAt:new Date().toISOString()});
   if(path==='/api/state'&&method==='GET'){
    const [a,b,c,d,e,f,g,h]=await Promise.all([
-    env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
+    env.DB.prepare('SELECT m.*,l.project_id FROM missions m LEFT JOIN mission_project_links l ON l.mission_id=m.id ORDER BY m.created_at DESC LIMIT 30').all(),
     env.DB.prepare("SELECT agent_id,status,provider,mission_id,output FROM agent_runs WHERE mission_id=(SELECT id FROM missions ORDER BY CASE WHEN status='running' THEN 0 WHEN status='queued' THEN 1 ELSE 2 END,created_at DESC LIMIT 1)").all(),
     env.DB.prepare('SELECT * FROM activity ORDER BY id DESC LIMIT 40').all(),
     env.DB.prepare('SELECT * FROM memories ORDER BY created_at DESC LIMIT 100').all(),
@@ -287,7 +287,7 @@ export async function handleAPI(req,env){
     if(row.status!=='active')return fail('Ative o projeto antes de gerar ideias.',409);
     const today=await env.DB.prepare("SELECT COUNT(*) n FROM project_events WHERE project_id=? AND action='ideas-generated' AND date(created_at)=date('now')").bind(id).first();
     if(today?.n>=2)return fail('Limite de duas análises por projeto por dia.',429);
-    const [prefs,history]=await Promise.all([env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 30').all()]);
+    const [prefs,history]=await Promise.all([env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),env.DB.prepare("SELECT m.role,m.content FROM messages m JOIN chat_threads t ON t.id=m.thread_id WHERE t.project_id=? AND t.status<>'trashed' ORDER BY m.id DESC LIMIT 30").bind(row.id).all()]);
     try{
      const ans=await callAI(env,[{role:'system',content:'Você é um consultor de produto sênior. Proponha no máximo 3 melhorias específicas e viáveis, sem alegar pesquisa ao vivo. Responda SOMENTE um JSON array com objetos {"title":"...","description":"...","reason":"..."}. Considere o estilo de trabalho do usuário, necessidades reais, riscos e custos; não invente funcionalidades já existentes.'},{role:'user',content:'Projeto: '+row.name+'\nDescrição: '+row.description+'\nPlataforma: '+row.platform+'\nMemórias explícitas: '+(prefs.results||[]).map(x=>x.content.slice(0,350)).join(' | ').slice(0,4300)+'\nHistórico: '+(history.results||[]).map(x=>x.role+': '+x.content.slice(0,240)).join('\n').slice(0,5000)}],'auto');
      const ideas=parseIdeas(ans.text),inserted=await saveIdeas(env.DB,id,ideas);
@@ -400,7 +400,7 @@ export async function handleAPI(req,env){
    }
    if(taskInput){
     const available=await listProjects(env.DB);
-    const delegation=await delegateChatWork(env,taskInput,provider,available);
+    const delegation=await delegateChatWork(env,taskInput,provider,available,thread.project_id||null);
     if(delegation){
      await saveThreadMessage(env.DB,threadId,'assistant',delegation.reply,'system');
      return respond({...delegation,provider:null,model:null,execution:executionReceipt(delegation)});
@@ -441,6 +441,12 @@ export async function handleAPI(req,env){
   }
   if(path==='/api/missions'&&method==='POST'){
    const data=await parse(req),description=String(data.description||'').trim().slice(0,MAX_MISSION);
+   const projectId=String(data.projectId||'').trim();
+   if(projectId){
+    if(!safeId(projectId))return fail('Projeto inválido.',400);
+    const project=await env.DB.prepare("SELECT id FROM projects WHERE id=? AND status='active'").bind(projectId).first();
+    if(!project)return fail('Selecione um projeto ativo existente.',400);
+   }
    if(description.length<8)return fail('Descreva melhor a missão.');
    if(!env.MISSIONS)return fail('Workflow não configurado.',503);
    const today=await env.DB.prepare("SELECT COUNT(*) n FROM missions WHERE date(created_at)=date('now')").first();
@@ -450,6 +456,7 @@ export async function handleAPI(req,env){
    const provider=normalizeProvider(data.provider||current?.value||'auto');
    const id=crypto.randomUUID(),title=description.split('\n')[0].slice(0,74);
    await env.DB.prepare('INSERT INTO missions(id,title,description,provider) VALUES(?,?,?,?)').bind(id,title,description,provider).run();
+   if(projectId)await env.DB.prepare('INSERT INTO mission_project_links(mission_id,project_id) VALUES(?,?)').bind(id,projectId).run();
    await env.DB.batch(AGENTS.map(a=>env.DB.prepare('INSERT INTO agent_runs(id,mission_id,agent_id) VALUES(?,?,?)').bind(crypto.randomUUID(),id,a.id)));
    try{await env.MISSIONS.create({id,params:{missionId:id}});}
    catch(e){await env.DB.prepare("UPDATE missions SET status='failed',error=? WHERE id=?").bind(String(e.message||e).slice(0,300),id).run();return fail('Não foi possível iniciar o Workflow.',503);}
@@ -458,7 +465,7 @@ export async function handleAPI(req,env){
   }
   if(path.startsWith('/api/missions/')&&method==='GET'){
    const id=path.slice('/api/missions/'.length);if(!safeId(id))return fail('ID inválido');
-   const mission=await env.DB.prepare('SELECT * FROM missions WHERE id=?').bind(id).first();
+   const mission=await env.DB.prepare('SELECT m.*,l.project_id FROM missions m LEFT JOIN mission_project_links l ON l.mission_id=m.id WHERE m.id=?').bind(id).first();
    if(!mission)return fail('Missão não encontrada.',404);
    const r=await env.DB.prepare('SELECT * FROM agent_runs WHERE mission_id=? ORDER BY rowid').bind(id).all();
    return respond({mission,runs:r.results||[]});
