@@ -132,12 +132,13 @@ function detailAgent(id){
  $('agent-detail').textContent=(a?.name||id)+'\n'+(a?.role||'')+'\n\nStatus: '+(run?.status||'disponível')+'\nModelo: '+(run?.provider||'—')+'\n\n'+(run?.output||'Nenhuma atividade desta estação registrada.');
 }
 document.querySelectorAll('.station').forEach(x=>x.addEventListener('click',()=>detailAgent(x.dataset.agent)));
+const missionStates={queued:'Na fila',running:'Trabalhando',done:'Concluída',failed:'Falhou'};
 function renderMissions(){
  const box=$('mission-list');box.replaceChildren();
  if(!state.missions.length){box.append(el('p','empty','Nenhuma missão registrada.'));return;}
  for(const m of state.missions){
   const b=el('button','mission-card');b.type='button';
-  b.append(el('b','',m.title),el('small','',m.status+' · '+escapeTime(m.created_at)));
+  b.append(el('b','',m.title),el('small','',((missionStates[m.status]||m.status)+' · '+escapeTime(m.created_at))));
   b.addEventListener('click',()=>loadMission(m.id));box.append(b);
  }
 }
@@ -169,7 +170,7 @@ async function refresh(){
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
   if(typeof renderOfficeLive==='function')renderOfficeLive();
   if(typeof window.renderJarvisMonitor==='function')window.renderJarvisMonitor();
-  if(missionSelection&&state.missions.some(m=>m.id===missionSelection&&m.status==='running'))loadMission(missionSelection);
+  if(missionSelection&&state.missions.some(m=>m.id===missionSelection&&['queued','running'].includes(m.status)))loadMission(missionSelection);
  }catch(e){notify(e.message);}
 }
 async function loadChat(){
@@ -197,6 +198,24 @@ async function sendChat(content,origin){
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
+  if(result.delegation?.status==='queued'){
+   const actions=el('div','delegation-actions');
+   const office=el('button','secondary delegation-office','Ver equipe no escritório');
+   office.type='button';office.addEventListener('click',()=>show('office'));
+   actions.append(office);
+   if(result.delegation.missionId){
+    const mission=el('button','secondary delegation-mission','Acompanhar missão');
+    mission.type='button';
+    mission.addEventListener('click',async()=>{show('missions');await loadMission(result.delegation.missionId);});
+    actions.append(mission);
+   }
+   if(result.delegation.codeJobId){
+    const jobs=el('button','secondary delegation-mission','Ver programação no projeto');
+    jobs.type='button';jobs.addEventListener('click',()=>show('projects'));actions.append(jobs);
+   }
+   origin.append(actions);
+  }
+
   if(typeof window.jarvisSpeakReply==='function')window.jarvisSpeakReply(result.reply);
   else if(typeof window.jarvisSetMood==='function')window.jarvisSetMood('idle');
   if(result.intake){const startBtn=document.getElementById('intake-start-now');if(startBtn)startBtn.hidden=result.intake.status!=='collecting';}
