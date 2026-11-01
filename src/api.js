@@ -1,3 +1,5 @@
+import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
+import {saveGitHub,readGitHub,hasGitHub,verifyGitHub} from './github-engine.js';
 import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
 import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider} from './ai.js';
 import {ensureSchema} from './bootstrap.js';
@@ -66,6 +68,86 @@ export async function handleAPI(req,env){
   if(path==='/api/integrations/nvidia'&&method==='DELETE'){
    await removeNvidia(env);
    return respond({connected:!!env.NVIDIA_API_KEY,externalSecret:!!env.NVIDIA_API_KEY});
+  }
+  if(path==='/api/projects'&&method==='GET')return respond({projects:await listProjects(env.DB)});
+  if(path==='/api/projects'&&method==='POST'){
+   const data=await parse(req);
+   try{return respond({project:await createProject(env.DB,data)},201);}
+   catch(e){return fail(String(e.message||e),400);}
+  }
+  if(path==='/api/github/status'&&method==='GET')return respond({connected:await hasGitHub(env.DB)});
+  if(path==='/api/github/connect'&&method==='POST'){
+   const data=await parse(req),key=String(data.token||'').trim(),repo=String(data.repo||'').trim();
+   if(key.length<25||key.length>550)return fail('Token GitHub inválido.');
+   try{const check=await verifyGitHub(key,repo);await saveGitHub(env,key);return respond({connected:true,repository:check.repo,branch:check.branch});}
+   catch(e){return fail('Falha na conexão GitHub: '+String(e.message||e).slice(0,210),403);}
+  }
+  if(path==='/api/github/disconnect'&&method==='POST'){
+   await env.DB.prepare("DELETE FROM provider_credentials WHERE name='github'").run();
+   return respond({connected:false});
+  }
+  if(path==='/api/ideas'&&method==='GET')return respond({ideas:await listIdeas(env.DB)});
+  if(path.startsWith('/api/ideas/')&&method==='PATCH'){
+   const id=path.slice('/api/ideas/'.length);if(!safeId(id))return fail('ID inválido');
+   const data=await parse(req);
+   try{return respond(await updateIdea(env.DB,id,String(data.status||'')));}
+   catch(e){return fail(String(e.message||e));}
+  }
+  const projectRoute=path.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)(?:\/([a-z-]+))?$/);
+  if(projectRoute){
+   const id=projectRoute[1],action=projectRoute[2]||'',row=await getProject(env.DB,id);
+   if(!row)return fail('Projeto não encontrado.',404);
+   if(!action&&method==='GET')return respond({project:row});
+   if(!action&&method==='PATCH'){
+    try{return respond({project:await modifyProject(env.DB,id,await parse(req))});}
+    catch(e){return fail(String(e.message||e));}
+   }
+   if(!action&&method==='DELETE'){
+    const data=await parse(req);
+    try{return respond({project:await projectStatus(env.DB,id,'trashed',String(data.confirm||'')),remoteUnchanged:true});}
+    catch(e){return fail(String(e.message||e));}
+   }
+   if(action==='status'&&method==='POST'){
+    const data=await parse(req);
+    try{return respond({project:await projectStatus(env.DB,id,String(data.status||''),String(data.confirm||''))});}
+    catch(e){return fail(String(e.message||e));}
+   }
+   if(action==='permanent'&&method==='DELETE'){
+    const data=await parse(req);
+    try{return respond(await permanentlyDeleteProject(env.DB,id,String(data.confirm||'')));}
+    catch(e){return fail(String(e.message||e));}
+   }
+   if(action==='ideas'&&method==='POST'){
+    if(row.status!=='active')return fail('Ative o projeto antes de gerar ideias.',409);
+    const today=await env.DB.prepare("SELECT COUNT(*) n FROM project_events WHERE project_id=? AND action='ideas-generated' AND date(created_at)=date('now')").bind(id).first();
+    if(today?.n>=2)return fail('Limite de duas análises por projeto por dia.',429);
+    const [prefs,history]=await Promise.all([env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 40').all(),env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 30').all()]);
+    try{
+     const ans=await callAI(env,[{role:'system',content:'Você é um consultor de produto sênior. Proponha no máximo 3 melhorias específicas e viáveis, sem alegar pesquisa ao vivo. Responda SOMENTE um JSON array com objetos {"title":"...","description":"...","reason":"..."}. Considere o estilo de trabalho do usuário, necessidades reais, riscos e custos; não invente funcionalidades já existentes.'},{role:'user',content:'Projeto: '+row.name+'\nDescrição: '+row.description+'\nPlataforma: '+row.platform+'\nMemórias explícitas: '+(prefs.results||[]).map(x=>x.content.slice(0,350)).join(' | ').slice(0,4300)+'\nHistórico: '+(history.results||[]).map(x=>x.role+': '+x.content.slice(0,240)).join('\n').slice(0,5000)}],'auto');
+     const ideas=parseIdeas(ans.text),inserted=await saveIdeas(env.DB,id,ideas);
+     await auditProject(env.DB,id,'ideas-generated','Sugestões avaliadas: '+inserted);
+     return respond({created:inserted,ideas:await listIdeas(env.DB)});
+    }catch(e){return fail('Não foi possível analisar o projeto: '+String(e.message||e).slice(0,180),503);}
+   }
+   if(action==='code'&&method==='POST'){
+    if(row.status!=='active'||!row.repo)return fail('Ative o projeto e configure o repositório GitHub.',409);
+    if(!(await hasGitHub(env.DB)))return fail('Conecte o GitHub em Configurações.',409);
+    if(!env.MISSIONS)return fail('Cloudflare Workflows não configurado.',503);
+    const data=await parse(req),request=String(data.request||'').trim().slice(0,4000);
+    if(request.length<15)return fail('Descreva a implementação com mais detalhes.');
+    const limit=await env.DB.prepare("SELECT COUNT(*) n FROM code_jobs WHERE date(created_at)=date('now')").first();
+    if(limit?.n>=3)return fail('Limite de 3 tarefas de código por dia.',429);
+    const id=crypto.randomUUID();
+    await env.DB.prepare('INSERT INTO code_jobs(id,project_id,request,provider) VALUES(?,?,?,?)').bind(id,row.id,request,normalizeProvider(data.provider||'auto')).run();
+    try{await env.MISSIONS.create({id,params:{codeJobId:id}});}
+    catch(e){await env.DB.prepare("UPDATE code_jobs SET status='failed',detail=? WHERE id=?").bind(String(e.message||e).slice(0,200),id).run();return fail('Falha ao iniciar Workflow.',503);}
+    await auditProject(env.DB,id,'code-job','Solicitação de código enviada ao Programador');
+    return respond({id,status:'queued'},201);
+   }
+   if(action==='jobs'&&method==='GET'){
+    const result=await env.DB.prepare('SELECT * FROM code_jobs WHERE project_id=? ORDER BY created_at DESC LIMIT 30').bind(id).all();
+    return respond({jobs:result.results||[]});
+   }
   }
   if(path==='/api/conversation'&&method==='GET'){
    const limit=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||60));
