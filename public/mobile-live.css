@@ -35,3 +35,18 @@ dialog:not(.agent-sheet){width:min(95vw,480px);padding:23px;border-radius:20px}.
 .mobile-new-mission[hidden]{display:none!important}
 @media(max-width:780px){.mobile-settings,.top .icon-btn{width:44px;height:44px;min-height:44px;min-width:44px}}
 @media(max-width:365px){.top{padding:0 10px}.top strong{font-size:13px}.top-actions{gap:6px}.top .system-status{font-size:0!important;line-height:0;width:10px;min-width:10px;height:10px;padding:0!important;display:inline-block;background:#c4ceda}.top .system-status.connected{background:#26b584}}
+
+/* Provider connection: thumb-friendly on 320–480px, no horizontal scroll. */
+.provider-console{margin:18px 0;padding:clamp(14px,4vw,20px);border:1px solid #dce6f4;border-radius:20px;background:#f6f9ff;color:#1c2c46;display:grid;gap:14px;min-width:0}
+.provider-console h2{margin:0;font-size:1.15rem;line-height:1.35;color:#162a47}
+.provider-console p{margin:0;line-height:1.55}
+.provider-console .provider-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #e1e8f5;padding:12px;border-radius:14px}
+.provider-console .provider-row>div{display:flex;flex-direction:column;gap:4px;flex:1 1 140px}
+.provider-console small{display:block;font-size:.79rem;line-height:1.4;color:#506784;margin-top:5px}
+.provider-console input{display:block;width:100%;min-width:0;box-sizing:border-box;min-height:48px;padding:12px;border:1px solid #91a9cc;border-radius:12px;background:#fff;font-size:16px;color:#192d48}
+.provider-console .nvidia-connect-form{display:grid;gap:12px;min-width:0}
+.provider-console button,.provider-open{min-height:46px;border-radius:12px;white-space:normal}
+.provider-console .provider-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#provider-feedback{padding:10px 12px;border-radius:12px;background:#ecf2fc;overflow-wrap:anywhere}
+.provider-open{display:block;width:100%;margin-top:12px;cursor:pointer}
+@media(max-width:460px){.provider-console .provider-row{align-items:stretch}.provider-console .provider-row button{width:100%}.provider-console .provider-buttons{grid-template-columns:1fr}.provider-console{margin:10px 0;padding:14px}}
