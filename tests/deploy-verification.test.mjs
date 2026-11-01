@@ -19,7 +19,9 @@ test('conversational model cannot invent deployments or raw html links',()=>{
  assert.match(guardChatDeployment(old,[]),/não tenho confirmação/);
  assert.doesNotMatch(guardChatDeployment(old,[]),/<a /);
  assert.match(guardChatDeployment('Veja https://x.vercel.app',[]),/não confirmad/);
- const published=[{name:'Projeto',deploy_url:'https://x.vercel.app/',deploy_verified_at:'2026-11-01T12:00:00Z'}];
+ const published=[{name:'Projeto',deploy_url:'https://x.vercel.app/',deploy_status:'online',deploy_verified_at:'2026-11-01T12:00:00Z'}];
  assert.match(guardChatDeployment('Site: https://x.vercel.app',published),/https:\/\/x\.vercel\.app/);
  assert.equal(cleanChatHtml('<p>Olá <strong>humano</strong></p>'),'Olá humano');
+ assert.match(guardChatDeployment('https://bad.vercel.app',published),/não confirmad/);
+ assert.match(guardChatDeployment('Acabei de fazer o deploy',published),/não tenho confirmação/);
 });
