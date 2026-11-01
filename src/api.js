@@ -41,6 +41,11 @@ export async function handleAPI(req,env){
  const url=new URL(req.url),path=url.pathname,method=req.method;
  try{
   await ensureSchema(env.DB);
+  if(path==='/api/intake'&&method==='GET'){
+   await setupIntakes(env.DB);
+   const item=await env.DB.prepare("SELECT id,step FROM project_intakes WHERE status='collecting' ORDER BY created_at DESC LIMIT 1").first();
+   return respond({active:!!item,step:item?item.step+1:null,total:5});
+  }
   if(path==='/api/state'&&method==='GET'){
    const [a,b,c,d,e,f,g]=await Promise.all([
     env.DB.prepare('SELECT * FROM missions ORDER BY created_at DESC LIMIT 30').all(),
