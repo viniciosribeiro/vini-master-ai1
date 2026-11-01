@@ -47,3 +47,13 @@ test('browser client has real Cloudflare VoiceClient events and same-thread bind
  assert.match(client,/startCall\(\)/);assert.match(client,/endCall\(\)/);
  assert.match(client,/transcriptchange/);
 });
+
+test('Cloudflare Agent route is kebab-case and assets forward /agents/* to Worker',()=>{
+ assert.match(index,/path\.startsWith\('\/agents\/vini-voice-agent\/'\)/);
+ assert.ok(wrangler.assets.run_worker_first.includes('/agents/*'));
+ assert.doesNotMatch(index,/path\.startsWith\('\/agents\/ViniVoiceAgent\/'\)/);
+});
+test('pinned Cloudflare runtime toolchain matches isolated cloud dry-run',()=>{
+ assert.equal(pkg.devDependencies.wrangler,'4.156.0');
+ assert.equal(pkg.devDependencies.esbuild,'0.28.2');
+});
