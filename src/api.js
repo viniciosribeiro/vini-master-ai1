@@ -1,3 +1,4 @@
+import {routeWorkIntent,delegateChatWork} from './orchestrator.js';
 import {saveDeploymentLinks,syncProjectDeployments,verifyProjectLinks} from './deployments.js';
 import {guardChatDeployment,deploymentContext} from './deploy-verification.js';
 import {setupIntakes,handleIntake} from './intake.js';
@@ -239,6 +240,15 @@ export async function handleAPI(req,env){
     await env.DB.prepare('INSERT INTO memories(id,content) VALUES(?,?)').bind(crypto.randomUUID(),saved.slice(0,1200)).run();
     await log(env,'supervisor','Memória permanente solicitada e registrada');
    }
+   // Launch real agents for actionable project instructions, not for ordinary conversation.
+   if(!saved&&routeWorkIntent(message)){
+    const available=await listProjects(env.DB);
+    const delegation=await delegateChatWork(env,message,provider,available);
+    if(delegation){
+     await env.DB.prepare("INSERT INTO messages(role,content,provider) VALUES('assistant',?,'system')").bind(delegation.reply).run();
+     return respond({...delegation,provider:null,model:null});
+    }
+   }
    const [past,pinned,relevant,projects,decisions,profile,verifiedDeployments]=await Promise.all([
     env.DB.prepare('SELECT role,content FROM messages ORDER BY id DESC LIMIT 18').all(),
     env.DB.prepare('SELECT content FROM memories ORDER BY created_at DESC LIMIT 60').all(),
@@ -253,7 +263,7 @@ export async function handleAPI(req,env){
 
    const portfolio=(projects.results||[]).map(p=>p.name+' ['+p.platform+'] '+p.description.slice(0,320)+' '+p.repo).join('\n').slice(0,5600);
    const activity=(decisions.results||[]).map(d=>d.action+': '+d.description.slice(0,180)).join('\n').slice(0,2700);
-   const system='Você é o VINI MASTER, um assistente pessoal amigável, direto e muito inteligente, conversando em português brasileiro natural. Fale como uma pessoa prestativa: frases simples, tom humano, sem linguagem corporativa, sem relatórios automáticos, sem introduções protocolares, sem repetir o pedido e sem blocos de títulos desnecessários. Em conversas normais, priorize uma resposta curta e útil (geralmente 2 a 5 parágrafos breves). Se a pessoa pedir detalhes, código ou uma análise complexa, ofereça a profundidade necessária. Não gere listas de etapas, recomendações ou riscos por padrão, nem rótulos como Resposta:, Conclusão:, Análise:. Evite Markdown excessivo e nunca exponha seu raciocínio interno. Não afirme que alterou GitHub, fez deploy ou executou ferramentas: isso não está habilitado neste estágio. Quando a pessoa pedir trabalho dos especialistas, explique brevemente como usar Nova missão. Leve em conta estas memórias (não as repita sem motivo):\n'+context+'\nTrechos úteis de conversas anteriores (use apenas se forem relevantes):\n'+old+'\nProjetos ativos do usuário:\n'+portfolio+'\nDecisões e alterações recentes de projetos:\n'+activity+'\nPerfil de trabalho registrado e editável:\n'+profile.content.slice(0,3400);
+   const system='Você é o VINI MASTER, um assistente pessoal amigável, direto e muito inteligente, conversando em português brasileiro natural. Fale como uma pessoa prestativa: frases simples, tom humano, sem linguagem corporativa, sem relatórios automáticos, sem introduções protocolares, sem repetir o pedido e sem blocos de títulos desnecessários. Em conversas normais, priorize uma resposta curta e útil (geralmente 2 a 5 parágrafos breves). Se a pessoa pedir detalhes, código ou uma análise complexa, ofereça a profundidade necessária. Não gere listas de etapas, recomendações ou riscos por padrão, nem rótulos como Resposta:, Conclusão:, Análise:. Evite Markdown excessivo e nunca exponha seu raciocínio interno. Não afirme que alterou GitHub, fez deploy ou executou ferramentas: isso não está habilitado neste estágio. O sistema pode delegar trabalho de verdade aos especialistas por Workflow; nunca diga que não existe delegação automática. Se houver limitações de cota, escopo ou GitHub, explique concretamente. Leve em conta estas memórias (não as repita sem motivo):\n'+context+'\nTrechos úteis de conversas anteriores (use apenas se forem relevantes):\n'+old+'\nProjetos ativos do usuário:\n'+portfolio+'\nDecisões e alterações recentes de projetos:\n'+activity+'\nPerfil de trabalho registrado e editável:\n'+profile.content.slice(0,3400);
    const verifiedSites=verifiedDeployments.results||[];
    const deployRules='\nREGRA OBRIGATÓRIA: Mensagens de chat NÃO criam arquivos, deploys nem sites. Nunca afirme ter feito deploy, publicado, executado código, testado URL, gerado imagens ou criado arquivos nesta conversa. Só informe publicação confirmada se houver evidência na lista abaixo. Não invente domínios ou links, não mostre HTML como <a href>, prefira português simples. Se o usuário pedir um projeto publicado, explique que é necessário um workflow com PR e deployment verificado. Publicações verificadas:\n'+(deploymentContext(verifiedSites)||'Nenhum deploy online validado no cadastro.')+'\nLinks cadastrados porém não verificados NÃO são links online. Não copie claims de outputs anteriores como fatos.';
    const history=(past.results||[]).reverse().map(x=>({role:x.role,content:x.content.slice(0,MAX_MESSAGE)}));
