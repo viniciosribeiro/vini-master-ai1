@@ -1,6 +1,6 @@
 import {readProfile,saveProfile,generateProfile} from './learning.js';
 import {createProject,listProjects,getProject,modifyProject,projectStatus,permanentlyDeleteProject,listIdeas,updateIdea,parseIdeas,saveIdeas,auditProject} from './project-manager.js';
-import {saveGitHub,readGitHub,hasGitHub,verifyGitHub} from './github-engine.js';
+import {saveGitHub,readGitHub,hasGitHub,verifyGitHub,listGitHubRepos} from './github-engine.js';
 import {hasStoredNvidia,storeNvidia,removeNvidia} from './provider-secrets.js';
 import {AGENTS,MAX_MESSAGE,MAX_MISSION,normalizeProvider,callAI,searchTerms,verifyProvider} from './ai.js';
 import {ensureSchema} from './bootstrap.js';
@@ -98,6 +98,22 @@ export async function handleAPI(req,env){
    if(key.length<25||key.length>550)return fail('Token GitHub inválido.');
    try{const check=await verifyGitHub(key,repo);await saveGitHub(env,key);return respond({connected:true,repository:check.repo,branch:check.branch});}
    catch(e){return fail('Falha na conexão GitHub: '+String(e.message||e).slice(0,210),403);}
+  }
+  if(path==='/api/github/import'&&method==='POST'){
+   const key=await readGitHub(env);
+   if(!key)return fail('Conecte o GitHub primeiro.',409);
+   try{
+    const remote=await listGitHubRepos(key),local=await listProjects(env.DB),known=new Set(local.map(x=>x.repo.toLowerCase()));
+    let imported=0;
+    for(const repo of remote){
+     if(known.has(repo.repo.toLowerCase()))continue;
+     const project=await createProject(env.DB,{name:repo.name,description:repo.description||'Importado do GitHub.',platform:'other',repo:repo.repo});
+     if(repo.archived)await projectStatus(env.DB,project.id,'archived','');
+     known.add(repo.repo.toLowerCase());imported++;
+     if(imported>=60)break;
+    }
+    return respond({imported,available:remote.length,projects:await listProjects(env.DB)});
+   }catch(e){return fail('Importação GitHub falhou: '+String(e.message||e).slice(0,160),503);}
   }
   if(path==='/api/github/disconnect'&&method==='POST'){
    await env.DB.prepare("DELETE FROM provider_credentials WHERE name='github'").run();
