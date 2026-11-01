@@ -55,7 +55,12 @@
   scene.append(panel('left'),panel('right'));
   const label=E('div','vr-office-visual-note');label.append(E('span','','Cenário ilustrativo · atividade atual exibida nos painéis'));
   scene.append(label);
-  office.insertBefore(scene,grid);
+  // Keep the interactive agents and supervisor first; the decorative image is optional.
+  // Never cover the real D1-driven stations with static artwork.
+  const sceneDetails=E('details','vr-scene-details');
+  const sceneSummary=E('summary','','Ver ilustração do escritório (opcional)');
+  sceneDetails.append(sceneSummary,scene);
+  grid.insertAdjacentElement('afterend',sceneDetails);
   for(const id of ['vc-projects-head','vc-mission-heading','vc-network-panel']){
    const root=$(id);if(root)headerArtwork(root.querySelector('.vc-header'));
   }
