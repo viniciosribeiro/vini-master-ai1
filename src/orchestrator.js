@@ -14,7 +14,7 @@ export function routeWorkIntent(input){
  if(text.length<14||SALUTATION.test(text)||NEGATION.test(text)||PURE_INFO.test(text))return null;
  if(INQUIRY.test(text)&&!/\b(?:implemente|fa[cç]a|execute|delegue|corrija|crie)\b/iu.test(text))return null;
  if(!COMMAND.test(text)||!TASK_NOUN.test(text))return null;
- const broad=/\b(?:projeto|sistema|site|aplicativo|plataforma|equipe|completo|tudo|orquestre|delegue)\b/iu.test(text);
+ const broad=/\b(?:equipe|completo|tudo|orquestre|delegue|mult[ií]plos especialistas)\b/iu.test(text)||/\b(?:crie|construa|desenvolva)\s+(?:(?:um|o|uma|a)\s+)?(?:projeto|sistema|site|app|aplicativo)\b/iu.test(text);
  const code=/\b(?:c[oó]digo|programa[cç][aã]o|api|backend|frontend|bug|erro|refator|implemente|corrija|fun[cç][aã]o|integra[cç][aã]o)\b/iu.test(text);
  const visual=/\b(?:visual|interface|tela|layout|design|ux|ui|responsiv|avatar|rob[oô]|anima[cç][aã]o|estilo)\b/iu.test(text);
  const qa=/\b(?:teste|valide|verifique|audite|seguran[cç]a|erro|bug|falha|corrija)\b/iu.test(text);
