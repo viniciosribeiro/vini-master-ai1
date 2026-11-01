@@ -38,6 +38,10 @@ function renderPortfolio(){
   if(preview)card.append(preview);
   if(item.description)card.append(projectText('p',item.description.slice(0,240)));
   card.append(projectButton('Gerenciar projeto',()=>selectProject(item.id),'secondary'));
+  if(item.status==='active')card.append(projectButton('💬 Nova conversa deste projeto',async()=>{
+   try{await window.viniThreads?.createNew({projectId:item.id});}catch(e){projectNotice(e.message);}
+  },'secondary'));
+
   parent.append(card);
  }
 }
