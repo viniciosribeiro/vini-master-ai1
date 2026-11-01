@@ -121,6 +121,7 @@ async function refresh(){
  try{
   state=await api('/state');
   updateStatus();renderTimeline();renderAgents();renderMissions();renderMemories();
+  if(typeof renderOfficeLive==='function')renderOfficeLive();
   if(missionSelection&&state.missions.some(m=>m.id===missionSelection&&m.status==='running'))loadMission(missionSelection);
  }catch(e){notify(e.message);}
 }
@@ -146,6 +147,9 @@ async function sendChat(content,origin){
  try{
   const result=await api('/chat',{method:'POST',body:{message:content,provider:state.provider}});
   renderAssistant(origin,result.reply,result.provider);
+  if(result.intake){const startBtn=document.getElementById('intake-start-now');if(startBtn)startBtn.hidden=result.intake.status!=='collecting';}
+  if(result.intake?.status==='started'){notify('Novo projeto criado. Veja Projetos e Missões.');if(typeof loadProjects==='function')loadProjects();}
+
   await refresh();
   if(!$('section-chat').hidden)await loadChat();
  }catch(e){
@@ -153,6 +157,15 @@ async function sendChat(content,origin){
   notify(e.message);
  }finally{chatSending=false;}
 }
+function startNewProjectInterview(){
+ show('chat');
+ const input=$('chat-message');input.value='Quero criar um novo projeto';
+ $('chat-form').requestSubmit();
+}
+$('begin-project-chat').addEventListener('click',startNewProjectInterview);
+$('intake-start-now').addEventListener('click',()=>{
+ show('chat');$('chat-message').value='PODE INICIAR';$('chat-form').requestSubmit();
+});
 $('quick-chat').addEventListener('submit',e=>{e.preventDefault();const input=$('quick-message');const value=input.value.trim();if(!value)return;input.value='';sendChat(value,$('quick-response'));});
 $('chat-form').addEventListener('submit',e=>{e.preventDefault();const input=$('chat-message'),value=input.value.trim();if(!value)return;input.value='';const box=$('messages');box.append(el('div','message user',value));const target=el('div','message assistant','');box.append(target);sendChat(value,target);box.scrollTop=box.scrollHeight;});
 $('mission-form').addEventListener('submit',async e=>{
