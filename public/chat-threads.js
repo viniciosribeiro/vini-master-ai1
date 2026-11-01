@@ -100,6 +100,7 @@ async function ensureSelected(){
 async function select(id){
  if(typeof chatSending!=='undefined'&&chatSending){report(new Error('A resposta está sendo recebida. Abra outra conversa quando ela terminar.'));return;}
  const t=threads.find(t=>t.id===id);if(!t)return;
+ if(t.status==='trashed'){report(new Error('Restaure esta conversa da lixeira antes de abri-la.'));return;}
  selectedId=id;sessionStorage.setItem(idKey,id);
  render();closeDrawer();
  if(typeof show==='function')show('chat');else if(typeof loadChat==='function')await loadChat();
