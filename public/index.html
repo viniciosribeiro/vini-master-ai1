@@ -2,8 +2,8 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=16"><link rel="stylesheet" href="/jarvis.css?v=16">
-<script src="/app.js?v=16" defer></script><script src="/projects.js?v=16" defer></script><script src="/pwa.js?v=16" defer></script><script src="/office-live.js?v=16" defer></script><script src="/jarvis.js?v=16" defer></script></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=17"><link rel="stylesheet" href="/jarvis.css?v=17">
+<script src="/app.js?v=17" defer></script><script src="/projects.js?v=17" defer></script><script src="/pwa.js?v=17" defer></script><script src="/office-live.js?v=17" defer></script><script src="/jarvis.js?v=17" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -72,7 +72,7 @@
 <section id="section-agents" class="view" hidden><div class="panel padded"><h1>Equipe de especialistas</h1><p>Selecione um agente na lista para conhecer sua função e atividade atual.</p><div id="agent-list" class="agent-list"></div><div id="agent-detail" class="detail">Clique em um especialista.</div></div></section>
 <section id="section-missions" class="view" hidden><div class="panel padded"><h1>Missões da equipe</h1><p>Uma missão é analisada pelo supervisor e pelos cinco especialistas. As análises são textuais; não editam sites automaticamente.</p><form id="mission-form"><label for="mission-description">Descreva o objetivo</label><textarea id="mission-description" rows="4" maxlength="12000" placeholder="Ex.: Planeje uma nova funcionalidade de reservas com requisitos, arquitetura, design e testes." required></textarea><button class="primary" type="submit">Iniciar missão</button></form><h2>Histórico de missões</h2><div id="mission-list"></div><div id="mission-detail" class="detail"></div></div></section>
 <section id="section-chat" class="view"><div class="panel padded">
-<div class="jarvis-chat-header"><div><span class="jarvis-chat-title">VINI · Chat Neural</span><span class="chat-status">Pronto para conversar</span></div><button id="jarvis-chat-office" type="button" class="secondary" aria-label="Abrir escritório dos agentes">Ver equipe ↗</button></div>
+<div class="jarvis-chat-header"><div><h1 class="jarvis-chat-title">VINI · Chat Neural</h1><span class="chat-status">Pronto para conversar</span></div><button id="jarvis-chat-office" type="button" class="secondary" aria-label="Abrir escritório dos agentes">Ver equipe ↗</button></div>
 <div id="jarvis-chat-hero" class="jarvis-chat-hero"><div class="jarvis-core"></div><div class="jarvis-hero-copy"><strong>Olá! Sou o VINI.</strong><span>Seu supervisor de IA. Como posso ajudar?</span></div><div class="jarvis-intro-buttons"><button type="button" id="jarvis-chat-new">+ Novo projeto</button><button type="button" id="jarvis-chat-activities">Ver atividades</button></div></div>
 <div id="messages" class="messages" role="log" aria-label="Histórico da conversa" aria-live="polite"></div>
 <button id="begin-project-chat" class="secondary begin-project-chat" type="button">+ Nova entrevista (até 5 perguntas)</button>
