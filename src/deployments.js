@@ -24,7 +24,7 @@ export async function saveDeploymentLinks(db,id,body){
 }
 async function ghList(token,repo,path){
  const res=await fetch('https://api.github.com/repos/'+repo+path,{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'Vini-Master-AI'}});
- if(!res.ok)throw Error('GitHub deployments HTTP '+res.status);
+ if(!res.ok){if([401,403].includes(res.status))throw Error('Autorize Deployments: Read-only no token fine-grained do GitHub para descobrir os links automaticamente.');throw Error('GitHub deployments HTTP '+res.status);}
  const data=await res.json();return Array.isArray(data)?data:[];
 }
 export async function discoverDeployments(token,repo){
