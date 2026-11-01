@@ -88,29 +88,16 @@ const mics=()=>[$('jarvis-chat-mic'),$('jarvis-dock-mic')].filter(Boolean);
 function voiceStatus(text){const status=$('jarvis-voice-status');if(status)status.textContent=text;}
 function setListening(value){listening=value;mics().forEach(b=>{b.classList.toggle('listening',value);b.setAttribute('aria-pressed',String(value));});setRobotMood(value?'listening':window.jarvisVoiceSpeaking?'speaking':'idle');voiceStatus(value?'Estou ouvindo…':'Fale comigo ou digite sua mensagem');}
 function startVoice(){
- if(listening){rec?.stop();setListening(false);return;}
- if(!Rec){voiceStatus('Microfone não suportado neste navegador. Use o Chrome Android.');return;}
- voiceEnabled=true;window.speechSynthesis?.cancel();rec=new Rec();rec.lang='pt-BR';rec.interimResults=false;rec.continuous=false;
- rec.onresult=e=>{const phrase=Array.from(e.results).map(x=>x[0]?.transcript||'').join(' ').trim();if(phrase)sendFromAnywhere(phrase);};
- rec.onerror=e=>{setListening(false);if(!['no-speech','aborted'].includes(e.error))voiceStatus('Permita o microfone ou tente novamente.');};
- rec.onend=()=>setListening(false);
- try{rec.start();setListening(true);}catch{setListening(false);voiceStatus('Não foi possível iniciar o microfone.');}
+ if(typeof window.viniVoice?.open==='function')window.viniVoice.open();
+ else voiceStatus('Estúdio de Voz IA indisponível. Atualize o aplicativo.');
 }
 mics().forEach(b=>b.addEventListener('click',startVoice));
-function disableVoiceOnTyping(){voiceEnabled=false;window.jarvisVoiceSpeaking=false;setRobotMood('idle');window.speechSynthesis?.cancel();}
+function disableVoiceOnTyping(){voiceEnabled=false;window.jarvisVoiceSpeaking=false;setRobotMood('idle');}
 $('chat-message')?.addEventListener('input',disableVoiceOnTyping);
 $('jarvis-dock-message')?.addEventListener('input',disableVoiceOnTyping);
 
-window.jarvisSpeakReply=(message)=>{
- if(!voiceEnabled||!window.speechSynthesis)return;
- const clean=String(message||'').replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').slice(0,1500).trim();if(!clean)return;
- speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(clean);utterance.lang='pt-BR';utterance.rate=1.02;utterance.pitch=1.04;
- const voices=speechSynthesis.getVoices(),br=voices.find(v=>v.lang.toLowerCase()==='pt-br');if(br)utterance.voice=br;
- utterance.onstart=()=>{window.jarvisVoiceSpeaking=true;setRobotMood('speaking');voiceStatus('VINI está falando…');};
- const finish=()=>{window.jarvisVoiceSpeaking=false;setRobotMood('idle');voiceStatus('Fale comigo ou digite sua mensagem');};
- utterance.onend=finish;utterance.onerror=finish;
- speechSynthesis.speak(utterance);
-};
+// Old browser TTS intentionally disabled. The natural-voice module replaces this handler.
+window.jarvisSpeakReply=()=>{};
 const history=$('messages');
 if(history&&window.MutationObserver){
  const observer=new MutationObserver(()=>document.body.classList.toggle('jarvis-has-history',history.children.length>=3));
