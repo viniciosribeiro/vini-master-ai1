@@ -1,4 +1,4 @@
-import {syncProjectDeployments} from './deployments.js';
+import {syncProjectDeployments,verifyProjectLinks} from './deployments.js';
 import {callAI} from './ai.js';
 import {parseIdeas,saveIdeas,auditProject,createProject,listProjects,projectStatus} from './project-manager.js';
 import {readGitHub,listGitHubRepos} from './github-engine.js';
@@ -24,7 +24,7 @@ async function syncReleasedSites(env){
   const projects=await listProjects(env.DB);
   let checked=0;
   for(const p of projects.filter(x=>x.status==='active'&&x.repo).slice(0,4)){
-   try{await syncProjectDeployments(env.DB,token,p);}catch{}
+   try{await syncProjectDeployments(env.DB,token,p);const current=await env.DB.prepare('SELECT * FROM projects WHERE id=?').bind(p.id).first();if(current)await verifyProjectLinks(env.DB,current);}catch{}
    checked++;
   }
   return {checked};
