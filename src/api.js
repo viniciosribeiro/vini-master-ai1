@@ -91,6 +91,7 @@ export async function handleAPI(req,env){
     const probe=await verifySelectedModel(env,provider,model);
     if(path==='/api/models/test')return respond({...probe,saved:false});
     await selectModel(env.DB,provider,model);
+    await env.DB.prepare("INSERT INTO settings(key,value) VALUES('provider',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(provider).run();
     await log(env,'supervisor','Modelo '+provider+' selecionado e testado: '+model);
     return respond({...probe,saved:true});
    }catch(e){return fail('Modelo não ativado: '+String(e.message||e).slice(0,250),503);}
