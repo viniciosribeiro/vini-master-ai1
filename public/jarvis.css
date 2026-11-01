@@ -439,3 +439,7 @@ body.jarvis-has-history .jarvis-intro-buttons{display:none}
  .vini-live-modal-events{padding:4px 11px 12px}
 }
 @media(prefers-reduced-motion:reduce){.vini-live-modal,.vini-live-event{animation:none!important;transition:none!important}}
+
+/* Agent detail drawer action: obvious path from each robot to its real logs. */
+.jarvis-sheet-log{width:100%;min-height:46px;margin-top:10px;padding:10px 13px;border:1px solid #38d1ef;border-radius:12px;background:#123f61;color:#d8f8ff;font-weight:760;font-size:13px}
+.jarvis-sheet-log:hover{background:#14577d}
