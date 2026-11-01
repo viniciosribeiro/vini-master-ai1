@@ -433,7 +433,7 @@ initializeAccess();
 // Adaptive polling: lively during actual work; economical when idle and offline.
 let refreshHeartbeat=0;
 setInterval(()=>{
- if(!token||!authValidated||document.hidden||navigator.onLine===false)return;
+ if(!authValidated||document.hidden||navigator.onLine===false)return; // HttpOnly cookie sessions do not keep a JS token.
  refreshHeartbeat++;
  const active=(state.missions||[]).some(m=>m.status==='running'||m.status==='queued')||(state.codeJobs||[]).some(j=>j.status==='working'||j.status==='queued');
  if(active||refreshHeartbeat%5===0)refresh();
