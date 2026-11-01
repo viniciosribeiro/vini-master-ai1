@@ -1,3 +1,4 @@
+import {syncProjectDeployments} from './deployments.js';
 import {callAI} from './ai.js';
 import {parseIdeas,saveIdeas,auditProject,createProject,listProjects,projectStatus} from './project-manager.js';
 import {readGitHub,listGitHubRepos} from './github-engine.js';
@@ -17,10 +18,23 @@ async function syncNewRepos(env){
   return {added};
  }catch{return {added:0,reason:'GitHub indisponível para sincronização'};}
 }
+async function syncReleasedSites(env){
+ try{
+  const token=await readGitHub(env);if(!token)return {checked:0};
+  const projects=await listProjects(env.DB);
+  let checked=0;
+  for(const p of projects.filter(x=>x.status==='active'&&x.repo).slice(0,4)){
+   try{await syncProjectDeployments(env.DB,token,p);}catch{}
+   checked++;
+  }
+  return {checked};
+ }catch{return {checked:0};}
+}
 export async function proactiveReview(env){
  if(!env.DB||!env.AI?.run)return {status:'skipped',reason:'missing bindings'};
  await ensureSchema(env.DB);
  await syncNewRepos(env);
+ await syncReleasedSites(env);
  const project=await env.DB.prepare("SELECT p.* FROM projects p WHERE p.status='active' AND NOT EXISTS(SELECT 1 FROM project_events e WHERE e.project_id=p.id AND e.action='auto-review' AND e.created_at>=datetime('now','-7 days')) ORDER BY p.updated_at ASC LIMIT 1").first();
  if(!project)return {status:'skipped',reason:'no project due'};
  const [memories,messages]=await Promise.all([
