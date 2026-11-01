@@ -2,7 +2,7 @@
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f3f6fc"><title>VINI MASTER AI | Central de Agentes</title>
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=6">
-<script src="/app.js?v=6" defer></script><script src="/mobile-live.js?v=5" defer></script></head>
+<script src="/app.js?v=7" defer></script><script src="/mobile-live.js?v=5" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -40,5 +40,5 @@
 <p class="muted" id="provider-feedback" role="status" aria-live="polite">A chave será transmitida somente para o seu Worker por HTTPS e armazenada cifrada no D1.</p>
 </div><button class="primary" id="settings-access">Configurar acesso 🔐</button><button class="secondary" id="export-data">Exportar dados JSON</button><button class="danger" id="erase-chat">Apagar histórico de conversas</button><p class="muted">Ao usar NVIDIA, trechos relevantes das suas conversas também são enviados à NVIDIA. Nunca insira senhas ou dados sensíveis na conversa.</p></div></section>
 </main></div></div>
-<dialog id="access-dialog"><form method="dialog" id="access-form"><h2>🔐 Acesso ao VINI MASTER AI</h2><p>Antes do primeiro acesso: Cloudflare → Workers &amp; Pages → vini-master-ai1 → Settings → Variables and Secrets → Add secret MASTER_TOKEN (40 caracteres ou mais). Depois insira aqui a mesma chave. Ela nunca deve ser enviada em chats ou ao GitHub.</p><label>Chave de acesso<input id="access-token" type="password" autocomplete="off" minlength="24" required></label><div class="dialog-actions"><button type="button" id="access-cancel" class="secondary">Cancelar</button><button type="submit" class="primary">Conectar</button></div></form></dialog>
+<dialog id="access-dialog" aria-labelledby="access-title"><form id="access-form"><h2 id="access-title">🔐 Entrar no VINI MASTER AI</h2><p>Digite a senha <strong>MASTER_TOKEN</strong> que está nos <strong>Secrets do Worker vini-master-ai1</strong>, no ambiente Produção. <strong>Não é a chave NVIDIA.</strong></p><p id="access-hint" class="muted">A senha será conferida pelo servidor antes de ser salva nesta sessão.</p><label for="access-token">Senha do painel (MASTER_TOKEN)<input id="access-token" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="24" required></label><p id="access-error" role="alert" class="auth-error" hidden></p><div class="dialog-actions"><button type="button" id="access-cancel" class="secondary">Cancelar</button><button type="submit" id="access-submit" class="primary">Verificar e entrar</button></div><p class="muted">Não sabe qual senha usar? No Cloudflare Dashboard → Workers &amp; Pages → vini-master-ai1 → Settings → Variables and Secrets, substitua o Secret MASTER_TOKEN por uma nova senha forte. Depois use aqui exatamente a mesma senha.</p></form></dialog>
 </body></html>
