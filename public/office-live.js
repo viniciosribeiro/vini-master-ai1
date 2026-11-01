@@ -32,8 +32,15 @@ function renderOfficeLive(){
   const id=station.dataset.agent;
   const active=counts.has(id);
   station.dataset.status=active?'working':(runningMission&&state.runs?.find(r=>r.agent_id===id)?.status==='failed'?'failed':'idle');
+  const run=(state.runs||[]).find(r=>r.agent_id===id);
+  let expression='idle';
+  if(active)expression='working';
+  else if(run?.status==='failed'&&realRecent(mission?.updated_at||mission?.created_at,5))expression='error';
+  else if(run?.status==='done'&&realRecent(mission?.updated_at||mission?.created_at,3))expression='success';
+  else if(run?.status==='queued'&&runningMission)expression='waiting';
+  station.dataset.expression=expression;
   const label=station.querySelector('.state');
-  if(label)label.textContent=active?'● Trabalhando agora':station.dataset.status==='failed'?'● Erro registrado':'● Disponível';
+  if(label)label.textContent=active?'● Trabalhando agora':expression==='success'?'● Concluiu uma etapa':expression==='error'?'● Erro registrado':expression==='waiting'?'● Aguardando tarefa':'● Disponível';
   let bubble=station.querySelector('.agent-popup');
   if(!bubble){bubble=document.createElement('span');bubble.className='agent-popup';station.append(bubble);}
   let latest=events.find(e=>e.agent_id===id);
@@ -41,6 +48,9 @@ function renderOfficeLive(){
   bubble.textContent=(active?'⚡ ':'')+String(detail).slice(0,92);
   bubble.dataset.active=active?'true':'false';
   bubble.title=active?'Atividade em execução no banco D1':'Última atividade registrada, sem execução atual';
+  const unit=station.querySelector('.jarvis-unit');
+  if(unit)unit.dataset.expression=expression;
+
  }
  if(events.length){
   const newest=Number(events[0].id)||0;
