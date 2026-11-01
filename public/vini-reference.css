@@ -157,3 +157,11 @@ body:before{background:radial-gradient(ellipse at 54% -4%,#173a796e,transparent 
 /* Lighthouse coastline is taken directly from the approved project/mission mockups. */
 .top:before{inset:0 10% 0 43%!important;background:linear-gradient(90deg,#061326c9 2%,#08142f11 38%,#05102583 98%),url('/ref-lighthouse.webp') center 47%/cover no-repeat!important;opacity:.94!important;filter:saturate(1.22)}
 @media(max-width:780px){.top:before{inset:0 18% 0 34%!important;opacity:.72!important}}
+
+/* Do not render the old empty office station view beneath the new illustrated office. */
+#section-office>.workspace>.office{display:none!important}
+#section-office>.workspace>.activity{min-width:0;max-width:none;width:100%;grid-column:1/-1}
+#section-office>.workspace{display:block!important}
+.vr-office-scene[data-live=true]{border-color:#32f1c4;box-shadow:0 0 23px #16cfa543}
+.vr-office-scene[data-live=true] .vr-office-floating.left{border-color:#39eac3}
+@media(max-width:780px){#section-office>.workspace>.activity{margin:10px 0 0!important}}
