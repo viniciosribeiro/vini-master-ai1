@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import {hasStoredNvidia,storeNvidia,loadNvidia,removeNvidia} from '../src/provider-secrets.js';
-globalThis.crypto=globalThis.crypto||webcrypto;
+if(!globalThis.crypto)Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 function mockDB(){
  let data;
  return {
