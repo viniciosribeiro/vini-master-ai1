@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#071323"><title>VINI MASTER AI | JARVIS Robot Edition 0.9.0</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css" defer><link rel="stylesheet" href="/mobile-live.css?v=24"><link rel="stylesheet" href="/jarvis.css?v=24">
-<script src="/app.js?v=24" defer></script><script src="/projects.js?v=24" defer></script><script src="/pwa.js?v=24" defer></script><script src="/office-live.js?v=24" defer></script><script src="/jarvis.js?v=24" defer></script><script src="/live-monitor.js?v=24" defer></script><script src="/evidence.js?v=24" defer></script></head>
+<script src="/app.js?v=24" defer></script><script src="/projects.js?v=24" defer></script><script src="/pwa.js?v=24" defer></script><script src="/office-live.js?v=24" defer></script><script src="/jarvis.js?v=24" defer></script><script src="/live-monitor.js?v=24" defer></script><script src="/evidence.js?v=24" defer></script><script src="/vercel-console.js?v=25" defer></script></head>
 <body>
 <div class="shell">
 <aside class="sidebar"><div class="logo">◈</div>
@@ -112,6 +112,27 @@
 <button type="submit" class="primary">Validar e conectar GitHub</button></form>
 <p class="muted">Token restrito aos repositórios desejados: Contents → Read/Write, Pull requests → Read/Write. Para identificar automaticamente links de deploy no GitHub, inclua também Deployments → Read-only (nunca Write). Ele é cifrado no D1; não coloque tokens nas conversas.</p>
 <button type="button" class="secondary" id="github-disconnect">Desconectar GitHub</button></div>
+<section class="vercel-console" id="vini-vercel-console">
+<h2>Vercel — builds reais</h2>
+<p class="muted">Conecte uma vez para consultar seus projetos e executar um rebuild de <strong>prévia</strong> com confirmação. Não publica em produção automaticamente.</p>
+<p id="vini-vercel-status" class="vercel-status" role="status">Vercel ainda não verificada.</p>
+<form id="vini-vercel-connect-form" autocomplete="off">
+<label>Token de acesso da Vercel
+<input id="vini-vercel-token" type="password" autocomplete="new-password" minlength="20" maxlength="550" placeholder="Token privado da Vercel" required></label>
+<label>Team ID (somente para projetos de equipe)
+<input id="vini-vercel-team" type="text" autocomplete="off" placeholder="Opcional: team_..."></label>
+<button class="primary" type="submit">Validar e conectar Vercel</button>
+</form>
+<div class="vercel-actions"><button type="button" id="vini-vercel-load" class="secondary">Consultar projetos</button><button type="button" id="vini-vercel-disconnect" class="secondary">Desconectar</button></div>
+<div class="vercel-project-picker" id="vini-vercel-project-picker" hidden>
+<label>Projeto na Vercel<select id="vini-vercel-project"><option value="">Selecione o projeto...</option></select></label>
+<label>Deployment existente (origem)<select id="vini-vercel-source"><option value="">Selecione primeiro o projeto...</option></select></label>
+<button type="button" id="vini-vercel-preview" class="primary" disabled>Refazer build de prévia</button>
+<p class="muted">Esse botão inicia um build externo real. Será solicitada confirmação antes de executar. Limite de segurança: três rebuilds por dia.</p>
+</div>
+<h3>Execuções verificáveis</h3><div id="vini-vercel-builds" class="vercel-build-list"><p class="muted">Nenhum rebuild iniciado neste painel.</p></div>
+<p id="vini-vercel-feedback" class="muted" role="status" aria-live="polite">Não compartilhe tokens no chat. A chave é cifrada no D1 da Cloudflare.</p>
+</section>
 <button class="primary" id="settings-access">Configurar acesso 🔐</button><button class="secondary" id="export-data">Exportar dados JSON</button><button class="danger" id="erase-chat">Apagar histórico de conversas</button><p class="muted">Ao usar NVIDIA, trechos relevantes das suas conversas também são enviados à NVIDIA. Nunca insira senhas ou dados sensíveis na conversa.</p></div></section>
 </main></div></div>
 <dialog id="access-dialog" aria-labelledby="access-title"><form id="access-form"><h2 id="access-title">🔐 Entrar no VINI MASTER AI</h2><p>Digite a senha <strong>MASTER_TOKEN</strong> que está nos <strong>Secrets do Worker vini-master-ai1</strong>, no ambiente Produção. <strong>Não é a chave NVIDIA.</strong></p><p id="access-hint" class="muted">A senha será conferida pelo servidor antes de ser salva nesta sessão.</p><label for="access-token">Senha do painel (MASTER_TOKEN)<input id="access-token" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" minlength="24" required></label><p id="access-error" role="alert" class="auth-error" hidden></p><div class="dialog-actions"><button type="button" id="access-cancel" class="secondary">Cancelar</button><button type="submit" id="access-submit" class="primary">Verificar e entrar</button></div><p class="muted">Não sabe qual senha usar? No Cloudflare Dashboard → Workers &amp; Pages → vini-master-ai1 → Settings → Variables and Secrets, substitua o Secret MASTER_TOKEN por uma nova senha forte. Depois use aqui exatamente a mesma senha.</p></form></dialog>
