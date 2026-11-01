@@ -49,13 +49,14 @@
 <label>GitHub<input id="project-edit-repo" placeholder="dono/repositorio" autocomplete="off"></label>
 <button class="primary" type="submit">Salvar alterações</button></form>
 <section class="project-deployments">
-<h2>Sites publicados</h2><p>Endereços de produção e prévia. O sistema identifica quando o GitHub registra uma publicação bem-sucedida; você também pode informar o link manualmente. Um link registrado não significa que a página foi testada no navegador.</p>
+<h2>Sites publicados</h2><p>Endereços de produção e prévia. O sistema identifica quando o GitHub registra uma publicação bem-sucedida; você também pode informar o link manualmente. Apenas links com status Online verificado foram testados por HTTP. Links cadastrados ou detectados pelo GitHub podem continuar indisponíveis.</p>
 <div id="project-deploy-links" class="deploy-links"></div>
 <form id="project-deploy-form">
 <label>Site em produção (https://)<input id="project-deploy-url" type="url" inputmode="url" autocomplete="url" placeholder="https://meu-projeto.workers.dev"></label>
 <label>Prévia / teste (https://)<input id="project-preview-url" type="url" inputmode="url" placeholder="https://preview-do-projeto.vercel.app"></label>
 <button class="secondary" type="submit">Salvar links</button></form>
 <button class="secondary" id="project-sync-deployments" type="button">Procurar deploys no GitHub</button>
+<button class="secondary" id="project-verify-links" type="button">Verificar publicação HTTP agora</button>
 <p id="deploy-check-status" class="muted" role="status" aria-live="polite"></p>
 </section>
 <div class="project-actions"><button class="secondary" id="project-archive" type="button">Arquivar</button><button class="secondary" id="project-restore" type="button">Restaurar / Ativar</button><button class="danger" id="project-trash" type="button">Enviar à lixeira</button><button class="danger" id="project-permanent" type="button">Excluir registro definitivamente</button></div>
