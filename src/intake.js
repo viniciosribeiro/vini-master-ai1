@@ -33,14 +33,16 @@ export function projectBlueprint(initial,answers){
 }
 export async function setupIntakes(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS project_intakes (id TEXT PRIMARY KEY,status TEXT NOT NULL DEFAULT 'collecting',initial_goal TEXT NOT NULL,answers_json TEXT NOT NULL DEFAULT '[]',step INTEGER NOT NULL DEFAULT 0,project_id TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+ const cols=await db.prepare('PRAGMA table_info(project_intakes)').all();
+ if(!(cols.results||[]).some(x=>x.name==='thread_id'))await db.prepare('ALTER TABLE project_intakes ADD COLUMN thread_id TEXT').run();
 }
-export async function handleIntake(env,message,provider='auto'){
+export async function handleIntake(env,message,provider='auto',threadId=null){
  const db=env.DB;
- const running=await db.prepare("SELECT * FROM project_intakes WHERE status='collecting' ORDER BY created_at DESC LIMIT 1").first();
+ const running=await db.prepare("SELECT * FROM project_intakes WHERE status='collecting' AND thread_id=? ORDER BY created_at DESC LIMIT 1").bind(threadId).first();
  if(!running&&!wantsNewProject(message))return null;
  if(!running){
   const id=crypto.randomUUID();
-  await db.prepare('INSERT INTO project_intakes(id,initial_goal) VALUES(?,?)').bind(id,message.slice(0,1200)).run();
+  await db.prepare('INSERT INTO project_intakes(id,initial_goal,thread_id) VALUES(?,?,?)').bind(id,message.slice(0,1200),threadId).run();
   return {reply:'Vamos criar seu projeto! Vou fazer até cinco perguntas rápidas. Você pode responder **PODE INICIAR** a qualquer momento e eu começo com o que já souber.\n\n**Pergunta 1 de 5:** '+QUESTIONS[0],intake:{id,step:1,total:5,status:'collecting'}};
  }
  if(!canStart(message)&&/^\s*(?:cancelar|desistir|parar entrevista)\s*[.!]?\s*$/iu.test(message)){
@@ -58,6 +60,7 @@ export async function handleIntake(env,message,provider='auto'){
  try{project=await createProject(db,data);}
  catch(e){return {reply:'Não consegui criar o projeto: '+String(e.message||e)+'. Podemos corrigir as informações e tentar novamente.',intake:{id:running.id,status:'collecting'}};}
  await db.prepare("UPDATE project_intakes SET status='started',answers_json=?,step=?,project_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(JSON.stringify(answers),answers.length,project.id,running.id).run();
+ if(threadId)await db.prepare('UPDATE chat_threads SET project_id=?,is_draft=0,title=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND project_id IS NULL').bind(project.id,project.name,threadId).run();
  let launched=false,jobId='',note='',codeStarted=false;
  if(project.repo&&env.MISSIONS&&await hasGitHub(db)){
   try{
