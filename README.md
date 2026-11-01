@@ -1,3 +1,16 @@
+# VINI MASTER AI 0.10.0 — Conectar Vercel e executar builds de prévia reais
+
+Nesta versão, falas como "vou forçar um build" não são aceitas como execução. O VINI redireciona à opção executável, sem texto longo: conectar Vercel na página Configurações, identificar o projeto/deployment real, confirmar e acompanhar o ID.
+
+**Vercel REST API no próprio Cloudflare Worker:** GET /api/vercel/status, POST /api/vercel/connect, POST /api/vercel/disconnect, GET /api/vercel/projects, GET /api/vercel/deployments?projectId=..., GET /api/vercel/builds, POST /api/vercel/preview-redeploy, GET /api/vercel/builds/<id>. Todos exigem MASTER_TOKEN. A chave Vercel fica cifrada via AES-GCM e HKDF usando a chave Master e nunca é devolvida ao navegador.
+
+A conexão é feita na interface, com token gerado diretamente na Vercel; não compartilhe tokens nas conversas. A opção de Team ID é opcional. Contas conectadas ao ChatGPT não concedem automaticamente acesso ao Worker.
+
+**Limites de segurança:** apenas PRÉVIA é aceita neste fluxo; nenhuma ação publica/atualiza produção. Rebuild só depois de confirmação explícita na interface e validação do projeto e deployment pelo token. Até 3 rebuilds/dia. D1 registra ID, status, origem, projeto e alterações de estado, sem expor tokens. O frontend só mostra link clicável depois de a Vercel declarar READY; READY não prova que o app passou por testes funcionais. A API Vercel é a autoridade sobre o build, não o texto do modelo.
+
+Testes de lógica em tests/vercel-connector.test.mjs. Os testes simulados validam host, autenticação, tratamento de falha e separação de responsabilidade. **A conexão/implantação real exige que o usuário conecte seu token Vercel a este aplicativo**; não foi alegado teste autenticado na conta antes disso.
+
+
 # VINI MASTER AI — Evidências e Execuções 0.9.0
 
 # VINI MASTER AI — Monitor de Ações 0.8.0
