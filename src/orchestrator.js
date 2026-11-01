@@ -36,8 +36,8 @@ export function resolvedFollowUp(current,priorUser,priorAssistant){
  const short=/^\s*(?:fa[cç]a tudo|pode fazer|faz isso|pode executar|execute agora|pode iniciar|inicie agora|pode come[cç]ar|continue com isso)\s*[.!]?\s*$/iu;
  if(!short.test(String(current||'')))return null;
  const previous=String(priorUser||'').trim(),reply=String(priorAssistant||'');
- if(previous.length<24||previous.length>1400||!/\\b(?:site|app|sistema|projeto|interface|tela|c[oó]digo|bug|teste|deploy|agentes|equipe|rob[oô]s|funcionalidade)\\b/iu.test(previous))return null;
- if(/(?:abri uma \\*\\*miss[aã]o real|deleguei a implementa[cç][aã]o|miss[aã]o real|pull request rascunho)/iu.test(reply))return null;
+ if(previous.length<24||previous.length>1400||!/\b(?:site|app|sistema|projeto|interface|tela|c[oó]digo|bug|teste|deploy|agentes|equipe|rob[oô]s|funcionalidade)\b/iu.test(previous))return null;
+ if(/(?:abri uma \*\*miss[aã]o real|deleguei a implementa[cç][aã]o|miss[aã]o real|pull request rascunho)/iu.test(reply))return null;
  const full='Execute a tarefa no sistema: '+previous;
  return routeWorkIntent(full)?full:null;
 }
