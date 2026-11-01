@@ -10,7 +10,7 @@ test('unverified model claims are rewritten and not presented as action',()=>{
  for(const text of ['Agora vou entrar de fato no Vercel e forçar o build remoto para liberar o acesso.','Agora vou forçar o build remoto para liberar o acesso.','Já fiz deploy na Cloudflare.']){
   const result=guardUnsupportedActionClaims(text);
   assert.equal(result.intercepted,true,text);
-  assert.match(result.text,/Não executei nenhuma ação externa/);
+  assert.match(result.text,/Não executei ações externas/);
  }
  assert.equal(guardUnsupportedActionClaims('Posso explicar como fazer deploy na Vercel.').intercepted,false);
 });
